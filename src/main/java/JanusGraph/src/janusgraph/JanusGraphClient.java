@@ -146,6 +146,8 @@ public class JanusGraphClient extends DB {
 	}
 
 	private int runWithRetry(DefaultLoggableOperation operation) {
+		System.out.println("Running operation with ID: " + operation.getOperationId());
+
 		String opId = operation.getOperationId();
 		for (int attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
@@ -178,6 +180,7 @@ public class JanusGraphClient extends DB {
 			}
 
 		}
+		System.out.println("Operation completed: " + operation.getOperationId());
 		return ERROR;
 	}
 	// public class CustomNuGraphConfig extends AbstractNuGraphConfig {
@@ -560,6 +563,7 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public int CreateFriendship(int friendid1, int friendid2) {
+		System.out.println("Attempting to create friendship from " + friendid1 + " to " + friendid2);
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1, friendid2, timestamp);
 
@@ -577,6 +581,7 @@ public class JanusGraphClient extends DB {
 
 		operation.addLog("[" + timestamp + "] Friendship established from " + friendid1 + " -> " + friendid2
 				+ " [Thread id: " + Thread.currentThread().getId() + "]");
+		System.out.println("CreateFriendship submitted for: " + friendid1 + " -> " + friendid2);		
 		return runWithRetry(operation);
 	}
 
