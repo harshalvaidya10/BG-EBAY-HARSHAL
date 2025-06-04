@@ -118,6 +118,8 @@ public class FriendshipWorkload extends Workload {
 
 	@Override
 	public boolean doInsert(DB db, Object threadState) {
+		System.out.println(">>>> FriendshipWorkload: doInsert() called");
+
 		int dbKey = -1;
 		int dbIdx = -1;
 		int neededFrnds = avgFriendCount;

@@ -425,7 +425,10 @@ public class JanusGraphClient extends DB {
 
 			// Count all "friend" edges and divide by 2 (each friendship has 2 users)
 			long totalFriends = g.E().hasLabel("friendship").has("status", "friend").count().next();
-			long avgFriendsPerUser = userCount == 0 ? 0 : totalFriends / userCount;
+			long avgFriendsPerUser = userCount == 0 ? 0
+					: g.V().hasLabel("users")
+							.bothE("friendship").has("status", "friend")
+							.count().next() / userCount;
 
 			// Count all "pending" edges and divide by 2 (optional)
 			long totalPending = g.E().hasLabel("friendship").has("status", "pending").count().next();
@@ -583,7 +586,7 @@ public class JanusGraphClient extends DB {
 
 		operation.addLog("[" + timestamp + "] Friendship established from " + friendid1 + " -> " + friendid2
 				+ " [Thread id: " + Thread.currentThread().getId() + "]");
-		System.out.println("CreateFriendship submitted for: " + friendid1 + " -> " + friendid2);		
+		System.out.println("CreateFriendship submitted for: " + friendid1 + " -> " + friendid2);
 		return runWithRetry(operation);
 	}
 
