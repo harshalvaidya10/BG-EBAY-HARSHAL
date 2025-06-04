@@ -51,15 +51,15 @@ import java.util.regex.Pattern;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
-import org.nugraph.client.config.AbstractNuGraphConfig;
-import org.nugraph.client.config.NuGraphConfigManager;
-import org.nugraph.client.gremlin.driver.remote.NuGraphClientException;
-import org.nugraph.client.gremlin.process.traversal.dsl.graph.RemoteNuGraphTraversalSource;
-//import org.nugraph.client.gremlin.driver.remote.GrpcConnectionPool.createNewConnections;
-import org.nugraph.client.gremlin.driver.remote.Options;
-import org.nugraph.client.gremlin.driver.remote.ReadMode;
-import org.nugraph.client.gremlin.structure.RemoteNuGraph;
-public class JanusGraphClient extends DB{
+// import org.nugraph.client.config.AbstractNuGraphConfig;
+// import org.nugraph.client.config.NuGraphConfigManager;
+// import org.nugraph.client.gremlin.driver.remote.NuGraphClientException;
+// import org.nugraph.client.gremlin.process.traversal.dsl.graph.RemoteNuGraphTraversalSource;
+// //import org.nugraph.client.gremlin.driver.remote.GrpcConnectionPool.createNewConnections;
+// import org.nugraph.client.gremlin.driver.remote.Options;
+// import org.nugraph.client.gremlin.driver.remote.ReadMode;
+// import org.nugraph.client.gremlin.structure.RemoteNuGraph;
+public class JanusGraphClient extends DB {
 
 	public static class DefaultLoggableOperation implements LoggableOperation {
 		private final List<String> logs = new ArrayList<>();
@@ -91,11 +91,10 @@ public class JanusGraphClient extends DB{
 		}
 	}
 
-
 	/** The code to return when the call succeeds. **/
 	public static final int SUCCESS = 0;
 	/** The code to return when the call fails. **/
-	public static final int ERROR   = -1;
+	public static final int ERROR = -1;
 	/** Retry times. **/
 	public static final int maxRetries = 10;
 	public static final long sleepDuration = 50;
@@ -146,7 +145,6 @@ public class JanusGraphClient extends DB{
 		return results;
 	}
 
-
 	private int runWithRetry(DefaultLoggableOperation operation) {
 		String opId = operation.getOperationId();
 		for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -155,9 +153,11 @@ public class JanusGraphClient extends DB{
 				List<String> logs = operation.getLogs();
 				if (!logs.isEmpty()) {
 					if (attempt > 3) {
-						logger.warning(String.format("[Attempt %d/%d] [Thread %d] %s", attempt, maxRetries, Thread.currentThread().getId(), logs.get(0)));
+						logger.warning(String.format("[Attempt %d/%d] [Thread %d] %s", attempt, maxRetries,
+								Thread.currentThread().getId(), logs.get(0)));
 					} else {
-						logger.info(String.format("[Attempt %d/%d] [Thread %d] %s", attempt, maxRetries, Thread.currentThread().getId(), logs.get(0)));
+						logger.info(String.format("[Attempt %d/%d] [Thread %d] %s", attempt, maxRetries,
+								Thread.currentThread().getId(), logs.get(0)));
 					}
 				}
 				return SUCCESS;
@@ -180,109 +180,120 @@ public class JanusGraphClient extends DB{
 		}
 		return ERROR;
 	}
-	public class CustomNuGraphConfig extends AbstractNuGraphConfig {
-		private final String serviceIp;
-		private final String failoverServiceIp;
-		private final boolean ssl;
-		private final String tlsAuthorityOverride;
+	// public class CustomNuGraphConfig extends AbstractNuGraphConfig {
+	// private final String serviceIp;
+	// private final String failoverServiceIp;
+	// private final boolean ssl;
+	// private final String tlsAuthorityOverride;
 
-		public CustomNuGraphConfig(String serviceHost, String failoverIp,
-								   boolean ssl, String tlsAuthorityOverride) {
-			this.serviceIp = serviceHost;
-			this.failoverServiceIp = failoverIp;
-			this.ssl = ssl;
-			this.tlsAuthorityOverride = tlsAuthorityOverride;
-		}
+	// public CustomNuGraphConfig(String serviceHost, String failoverIp,
+	// boolean ssl, String tlsAuthorityOverride) {
+	// this.serviceIp = serviceHost;
+	// this.failoverServiceIp = failoverIp;
+	// this.ssl = ssl;
+	// this.tlsAuthorityOverride = tlsAuthorityOverride;
+	// }
 
-		@Override
-		public String getFailoverServiceHost() {
-			return failoverServiceIp;
-		}
+	// @Override
+	// public String getFailoverServiceHost() {
+	// return failoverServiceIp;
+	// }
 
-		@Override
-		public String getRegion() {
-			return "NA";
-		}
+	// @Override
+	// public String getRegion() {
+	// return "NA";
+	// }
 
-		@Override
-		public int getRestConnectTimeout() {
-			return 1000;
-		}
+	// @Override
+	// public int getRestConnectTimeout() {
+	// return 1000;
+	// }
 
-		@Override
-		public int getRestReadTimeout() {
-			return 1000;
-		}
+	// @Override
+	// public int getRestReadTimeout() {
+	// return 1000;
+	// }
 
-		@Override
-		public String getServiceHost() {
-			return serviceIp;
-		}
+	// @Override
+	// public String getServiceHost() {
+	// return serviceIp;
+	// }
 
-		@Override
-		public int getServicePort() {
-			return ssl ? 8443: 8080;
-		}
+	// @Override
+	// public int getServicePort() {
+	// return ssl ? 8443: 8080;
+	// }
 
-		@Override
-		public long getTimeout() {
-			return 20000;
-		}
+	// @Override
+	// public long getTimeout() {
+	// return 20000;
+	// }
 
-		@Override
-		public boolean isPublishMetricsToSherlock() {
-			return false;
-		}
+	// @Override
+	// public boolean isPublishMetricsToSherlock() {
+	// return false;
+	// }
 
-		@Override
-		public boolean isResetTimeoutOnRetryEnabled() {
-			return false;
-		}
+	// @Override
+	// public boolean isResetTimeoutOnRetryEnabled() {
+	// return false;
+	// }
 
-		@Override
-		public boolean isSSLEnabled() {
-			return ssl;
-		}
+	// @Override
+	// public boolean isSSLEnabled() {
+	// return ssl;
+	// }
 
-		@Override
-		public String getProperty(PropertyName prop) {
-			if (prop.equals(PropertyName.UMP_EVENTS_ENABLED)) {
-				return "false";
-			} else if (prop.equals(PropertyName.UMP_NAMESPACE)) {
-				return "nugraph";
-			} else if (prop.equals(PropertyName.UMP_CONSUMERID)) {
-				return "urn:ebay-marketplace-consumerid:33110598-3c00-4901-9887-2de13a5f1e9c";
-			} else if (prop.equals(PropertyName.AUTHORITY_OVERRIDE)) {
-				return tlsAuthorityOverride;
-			}
+	// @Override
+	// public String getProperty(PropertyName prop) {
+	// if (prop.equals(PropertyName.UMP_EVENTS_ENABLED)) {
+	// return "false";
+	// } else if (prop.equals(PropertyName.UMP_NAMESPACE)) {
+	// return "nugraph";
+	// } else if (prop.equals(PropertyName.UMP_CONSUMERID)) {
+	// return
+	// "urn:ebay-marketplace-consumerid:33110598-3c00-4901-9887-2de13a5f1e9c";
+	// } else if (prop.equals(PropertyName.AUTHORITY_OVERRIDE)) {
+	// return tlsAuthorityOverride;
+	// }
 
-			return super.getProperty(prop);
-		}
-	}
-	public synchronized GraphTraversalSource getInstance(String hostName,
-																 String authOverride, String keyspace, boolean isread) {
-		GraphTraversalSource gg;
+	// return super.getProperty(prop);
+	// }
+	// }
+	// public synchronized GraphTraversalSource getInstance(String hostName,
+	// String authOverride, String keyspace, boolean isread) {
+	// GraphTraversalSource gg;
+	// try {
+	// AbstractNuGraphConfig config = new CustomNuGraphConfig(
+	// hostName, hostName, true, authOverride
+	// );
+	// NuGraphConfigManager.setDefaultConfigAndInit("YCSB", config);
+
+	// // 创建远程图遍历源
+	// HashMap<String, Object> optionsMap = new HashMap<>();
+	// optionsMap.put(Options.TIMEOUT_IN_MILLIS, 99999);
+	// optionsMap.put(Options.IS_RETRY_ALLOWED, true);
+	// if(isread) {
+	// optionsMap.put(Options.READ_MODE, ReadMode.READ_SNAPSHOT);
+	// optionsMap.put(Options.READ_ONLY, true);
+	// }
+	// gg = RemoteNuGraph.instance().traversal().withRemote(keyspace, optionsMap);
+
+	// } catch (NuGraphClientException e) {
+	// throw new RuntimeException(e);
+	// }
+	// return gg;
+	// }
+
+	public synchronized GraphTraversalSource getInstance(boolean isRead) {
 		try {
-			AbstractNuGraphConfig config = new CustomNuGraphConfig(
-					hostName, hostName, true, authOverride
-			);
-			NuGraphConfigManager.setDefaultConfigAndInit("YCSB", config);
-
-			// 创建远程图遍历源
-			HashMap<String, Object> optionsMap = new HashMap<>();
-			optionsMap.put(Options.TIMEOUT_IN_MILLIS, 99999);
-			optionsMap.put(Options.IS_RETRY_ALLOWED, true);
-			if(isread) {
-				optionsMap.put(Options.READ_MODE, ReadMode.READ_SNAPSHOT);
-				optionsMap.put(Options.READ_ONLY, true);
-			}
-			gg = RemoteNuGraph.instance().traversal().withRemote(keyspace, optionsMap);
-
-		} catch (NuGraphClientException e) {
-			throw new RuntimeException(e);
+			Cluster cluster = Cluster.open("conf/remote-objects.yaml");
+			return traversal().withRemote(DriverRemoteConnection.using(cluster));
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to connect to JanusGraph", e);
 		}
-		return gg;
 	}
+
 	@Override
 	public boolean init() throws DBException {
 		// todo: reload everything
@@ -293,27 +304,34 @@ public class JanusGraphClient extends DB{
 			synchronized (INIT_LOCK) {
 				if (!initialized) {
 					try {
-//						TypeSerializerRegistry registry = TypeSerializerRegistry.build()
-//								.addRegistry(JanusGraphIoRegistry.instance())
-//								.create();
-//
-//						Cluster cluster = Cluster.build()
-//								.addContactPoint("128.110.96.75")
-//								.port(8182)
-//								.minConnectionPoolSize(10)
-//								.maxConnectionPoolSize(100)
-//								.maxSimultaneousUsagePerConnection(48)
-//								.maxWaitForConnection(5000)
-//								.serializer(new GraphBinaryMessageSerializerV1(registry))
-//								.maxContentLength(524288)
-//								.create();
+						// TypeSerializerRegistry registry = TypeSerializerRegistry.build()
+						// .addRegistry(JanusGraphIoRegistry.instance())
+						// .create();
+						//
+						// Cluster cluster = Cluster.build()
+						// .addContactPoint("128.110.96.75")
+						// .port(8182)
+						// .minConnectionPoolSize(10)
+						// .maxConnectionPoolSize(100)
+						// .maxSimultaneousUsagePerConnection(48)
+						// .maxWaitForConnection(5000)
+						// .serializer(new GraphBinaryMessageSerializerV1(registry))
+						// .maxContentLength(524288)
+						// .create();
 
-//						sharedClient = cluster.connect();
-//						sharedG = traversal().withRemote(DriverRemoteConnection.using(cluster));
-						sharedG = getInstance("nugraphservice-testyimingfdbntypesbg-lvs-internal.vip.ebay.com",
-								"nugraphservice-slc.monstor-preprod.svc.23.tess.io", "ldbc_sf_01_b", false);
-						sharedGRead = getInstance("nugraphservice-testyimingfdbntypesbg-lvs-internal.vip.ebay.com",
-								"nugraphservice-slc.monstor-preprod.svc.23.tess.io", "ldbc_sf_01_b", true);
+						// sharedClient = cluster.connect();
+						// sharedG = traversal().withRemote(DriverRemoteConnection.using(cluster));
+						// sharedG =
+						// getInstance("nugraphservice-testyimingfdbntypesbg-lvs-internal.vip.ebay.com",
+						// "nugraphservice-slc.monstor-preprod.svc.23.tess.io", "ldbc_sf_01_b", false);
+						// sharedGRead =
+						// getInstance("nugraphservice-testyimingfdbntypesbg-lvs-internal.vip.ebay.com",
+						// "nugraphservice-slc.monstor-preprod.svc.23.tess.io", "ldbc_sf_01_b", true);
+
+						sharedG = getInstance(false);
+						sharedGRead = getInstance(true); // Optional: could just reuse sharedG if no read-write
+															// distinction needed
+
 						logger.info("connected successfully in thread " + Thread.currentThread().getName());
 
 						try {
@@ -358,38 +376,40 @@ public class JanusGraphClient extends DB{
 	public HashMap<String, String> getInitialStats() {
 		HashMap<String, String> stats = new HashMap<String, String>();
 
-//		try {
-//			Map<String, Object> resultMap = g.V().hasLabel("users").has("userid", 0)
-//					.project("friendCount", "pendingCount")
-//					.by(__.outE("friendship").has("status", "friend").count())
-//					.by(__.outE("friendship").has("status", "pending").count())
-//					.tryNext().orElse(null);
-			stats.put("usercount", "100000");
-			stats.put("resourcesperuser", "0");
-			stats.put("avgfriendsperuser", "5");
-			stats.put("avgpendingperuser", "0");
-			return stats;
-//			if (resultMap == null) {
-//				stats.put("usercount", "0");
-//				stats.put("resourcesperuser", "0");
-//				stats.put("avgfriendsperuser", "0");
-//				stats.put("avgpendingperuser", "0");
-//				return stats;
-//			}
-//
-//			// 获取统计结果
-//			int userCount = Math.toIntExact(g.V().hasLabel("users").count().next());
-//			stats.put("usercount", String.valueOf(userCount));
-//			stats.put("resourcesperuser", "0");  // 资源数（此处为 0，可扩展）
-//			int avgF = ((Long) resultMap.getOrDefault("avgFriendsPerUser", 0L)).intValue();
-//			int avgP = ((Long) resultMap.getOrDefault("avgPendingPerUser", 0L)).intValue();
-//			stats.put("avgfriendsperuser", String.valueOf(avgF));
-//			stats.put("avgpendingperuser", String.valueOf(avgP));
-//
-//		} catch (Exception sx) {
-//			sx.printStackTrace(System.out);
-//		}
-//		return stats;
+		// try {
+		// Map<String, Object> resultMap = g.V().hasLabel("users").has("userid", 0)
+		// .project("friendCount", "pendingCount")
+		// .by(__.outE("friendship").has("status", "friend").count())
+		// .by(__.outE("friendship").has("status", "pending").count())
+		// .tryNext().orElse(null);
+		stats.put("usercount", "100000");
+		stats.put("resourcesperuser", "0");
+		stats.put("avgfriendsperuser", "5");
+		stats.put("avgpendingperuser", "0");
+		return stats;
+		// if (resultMap == null) {
+		// stats.put("usercount", "0");
+		// stats.put("resourcesperuser", "0");
+		// stats.put("avgfriendsperuser", "0");
+		// stats.put("avgpendingperuser", "0");
+		// return stats;
+		// }
+		//
+		// // 获取统计结果
+		// int userCount = Math.toIntExact(g.V().hasLabel("users").count().next());
+		// stats.put("usercount", String.valueOf(userCount));
+		// stats.put("resourcesperuser", "0"); // 资源数（此处为 0，可扩展）
+		// int avgF = ((Long) resultMap.getOrDefault("avgFriendsPerUser",
+		// 0L)).intValue();
+		// int avgP = ((Long) resultMap.getOrDefault("avgPendingPerUser",
+		// 0L)).intValue();
+		// stats.put("avgfriendsperuser", String.valueOf(avgF));
+		// stats.put("avgpendingperuser", String.valueOf(avgP));
+		//
+		// } catch (Exception sx) {
+		// sx.printStackTrace(System.out);
+		// }
+		// return stats;
 	}
 
 	@Override
@@ -397,7 +417,7 @@ public class JanusGraphClient extends DB{
 		try {
 			// cleanup all connections
 			cleanupAllConnections();
-//			g.V().drop().iterate();
+			// g.V().drop().iterate();
 			logger.info("Graph database cleaned up.");
 
 		} catch (Exception e) {
@@ -409,8 +429,9 @@ public class JanusGraphClient extends DB{
 	public void createSchema(Properties props) {
 		try {
 			// read JSON file
-//			String schemaScript = new String(Files.readAllBytes(Paths.get("conf/schema.groovy")));
-//			sharedClient.submit(schemaScript).all().get();
+			// String schemaScript = new
+			// String(Files.readAllBytes(Paths.get("conf/schema.groovy")));
+			// sharedClient.submit(schemaScript).all().get();
 
 			logger.info("Schema successfully created!");
 		} catch (Exception e) {
@@ -418,11 +439,9 @@ public class JanusGraphClient extends DB{
 		}
 	}
 
-
-
 	@Override
 	public int insertEntity(String entitySet, String entityPK,
-							HashMap<String, ByteIterator> values, boolean insertImage) {
+			HashMap<String, ByteIterator> values, boolean insertImage) {
 		// entityPK is automaticly generated?
 		if (entitySet == null) {
 			return -1;
@@ -430,10 +449,10 @@ public class JanusGraphClient extends DB{
 		if (entityPK == null) {
 			return -1;
 		}
-		ResultSet rs =null;
+		ResultSet rs = null;
 
 		try {
-			if(entitySet.equalsIgnoreCase("main/resources")) {
+			if (entitySet.equalsIgnoreCase("main/resources")) {
 				return SUCCESS; // TODO: at this stage we don't add any resourse
 			}
 			GraphTraversal<Vertex, Vertex> traversal = g.addV(entitySet)
@@ -456,31 +475,30 @@ public class JanusGraphClient extends DB{
 	}
 
 	@Override
-	public int inviteFriend(int inviterID, int inviteeID){
+	public int inviteFriend(int inviterID, int inviteeID) {
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("inviteFriend-%d-%d-%d", inviterID, inviteeID, timestamp);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
-				g.V().hasLabel("users").has("userid", inviterID).as("inviter")
-						.V().hasLabel("users").has("userid", inviteeID).as("invitee")
-						.coalesce(__.select("inviter"), __.constant("Vertex with userid " + inviterID + " not found"))
-						.coalesce(__.select("invitee"), __.constant("Vertex with userid " + inviteeID + " not found"))
-						// if friendship edge exists and status is rejected
-						.sideEffect(
-								__.select("inviter")
-										.outE("friendship")
-										.where(__.inV().as("invitee"))
-										.has("status", "rejected")
-										.property("status", "pending")
-						)
-						// if friendship edge not exists
-						.choose(
-								__.select("inviter").outE("friendship").where(__.inV().as("invitee")),
-								__.identity(),
-								__.addE("friendship").from("inviter").to("invitee").property("status", "pending")
-						)
-						.iterate();
+			g.V().hasLabel("users").has("userid", inviterID).as("inviter")
+					.V().hasLabel("users").has("userid", inviteeID).as("invitee")
+					.coalesce(__.select("inviter"), __.constant("Vertex with userid " + inviterID + " not found"))
+					.coalesce(__.select("invitee"), __.constant("Vertex with userid " + inviteeID + " not found"))
+					// if friendship edge exists and status is rejected
+					.sideEffect(
+							__.select("inviter")
+									.outE("friendship")
+									.where(__.inV().as("invitee"))
+									.has("status", "rejected")
+									.property("status", "pending"))
+					// if friendship edge not exists
+					.choose(
+							__.select("inviter").outE("friendship").where(__.inV().as("invitee")),
+							__.identity(),
+							__.addE("friendship").from("inviter").to("invitee").property("status", "pending"))
+					.iterate();
 		});
-		operation.addLog("[" + timestamp + "] " + "Friend request sent from " + inviterID + " -> " + inviteeID + " [Thread id: " + Thread.currentThread().getId() + "]");
+		operation.addLog("[" + timestamp + "] " + "Friend request sent from " + inviterID + " -> " + inviteeID
+				+ " [Thread id: " + Thread.currentThread().getId() + "]");
 		return runWithRetry(operation);
 	}
 
@@ -489,15 +507,16 @@ public class JanusGraphClient extends DB{
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1, friendid2, timestamp);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
-				g.V().hasLabel("users").has("userid", friendid1).as("inviter")
-						.V().hasLabel("users").has("userid", friendid2).as("invitee")
-						.coalesce(__.select("inviter"), __.constant("Vertex with userid " + friendid1 + " not found"))
-						.coalesce(__.select("invitee"), __.constant("Vertex with userid " + friendid2 + " not found"))
-						.addE("friendship").from("inviter").to("invitee")
-						.property("status", "friend")
-						.iterate();
+			g.V().hasLabel("users").has("userid", friendid1).as("inviter")
+					.V().hasLabel("users").has("userid", friendid2).as("invitee")
+					.coalesce(__.select("inviter"), __.constant("Vertex with userid " + friendid1 + " not found"))
+					.coalesce(__.select("invitee"), __.constant("Vertex with userid " + friendid2 + " not found"))
+					.addE("friendship").from("inviter").to("invitee")
+					.property("status", "friend")
+					.iterate();
 		});
-		operation.addLog("[" + timestamp + "] " + "Friendship established from " + friendid1 + " -> " + friendid2 + " [Thread id: " + Thread.currentThread().getId() + "]");
+		operation.addLog("[" + timestamp + "] " + "Friendship established from " + friendid1 + " -> " + friendid2
+				+ " [Thread id: " + Thread.currentThread().getId() + "]");
 		return runWithRetry(operation);
 	}
 
@@ -508,19 +527,23 @@ public class JanusGraphClient extends DB{
 		String operationId = String.format("acceptFriend-%d-%d-%d", inviterID, inviteeID, timestamp);
 		AtomicLong count = new AtomicLong(-1L);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
-				count.set(g.V().hasLabel("users").has("userid", inviterID)
-						.outE("friendship").has("status", "pending")
-						.where(__.inV().hasLabel("users").has("userid", inviteeID))
-						.property("status", "friend")
-						.count()
-						.next());
-			});
+			count.set(g.V().hasLabel("users").has("userid", inviterID)
+					.outE("friendship").has("status", "pending")
+					.where(__.inV().hasLabel("users").has("userid", inviteeID))
+					.property("status", "friend")
+					.count()
+					.next());
+		});
 		if (count.get() == 0) {
-			operation.addLog("[" + timestamp + "] " + "Friendship accepted failed! From " + inviterID + " -> " + inviteeID + ". One or both vertices not found." + " [Thread id: " + Thread.currentThread().getId() + "]");
+			operation.addLog("[" + timestamp + "] " + "Friendship accepted failed! From " + inviterID + " -> "
+					+ inviteeID + ". One or both vertices not found." + " [Thread id: " + Thread.currentThread().getId()
+					+ "]");
 		} else if (count.get() == 1) {
-			operation.addLog("[" + timestamp + "] " + "Friendship accepted from " + inviterID + " -> " + inviteeID + " [Thread id: " + Thread.currentThread().getId() + "]");
+			operation.addLog("[" + timestamp + "] " + "Friendship accepted from " + inviterID + " -> " + inviteeID
+					+ " [Thread id: " + Thread.currentThread().getId() + "]");
 		} else {
-			operation.addLog("[" + timestamp + "] " + "Friendship accepted failed! From " + inviterID + " -> " + inviteeID + ". Multiple edges found." + " [Thread id: " + Thread.currentThread().getId() + "]");
+			operation.addLog("[" + timestamp + "] " + "Friendship accepted failed! From " + inviterID + " -> "
+					+ inviteeID + ". Multiple edges found." + " [Thread id: " + Thread.currentThread().getId() + "]");
 		}
 		return runWithRetry(operation);
 	}
@@ -531,39 +554,41 @@ public class JanusGraphClient extends DB{
 		String operationId = String.format("rejectFriend-%d-%d-%d", inviterID, inviteeID, timestamp);
 		AtomicLong count = new AtomicLong(-1L);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
-				count.set(g.V().hasLabel("users").has("userid", inviterID)
-						.outE("friendship").has("status", "pending")
-						.where(__.inV().hasLabel("users").has("userid", inviteeID))
-						.property("status", "rejected")
-						.count()
-						.next());
-			});
+			count.set(g.V().hasLabel("users").has("userid", inviterID)
+					.outE("friendship").has("status", "pending")
+					.where(__.inV().hasLabel("users").has("userid", inviteeID))
+					.property("status", "rejected")
+					.count()
+					.next());
+		});
 		if (count.get() == 0) {
-			operation.addLog("[" + timestamp + "] " + "Friendship rejected failed! From " + inviterID + " -> " + inviteeID + ". Didn't find any pending -> rejected edges" + " [Thread id: " + Thread.currentThread().getId() + "]");
+			operation.addLog("[" + timestamp + "] " + "Friendship rejected failed! From " + inviterID + " -> "
+					+ inviteeID + ". Didn't find any pending -> rejected edges" + " [Thread id: "
+					+ Thread.currentThread().getId() + "]");
 		} else if (count.get() == 1) {
-			operation.addLog("[" + timestamp + "] " + "Friendship rejected from " + inviterID + " -> " + inviteeID + " [Thread id: " + Thread.currentThread().getId() + "]");
-		} else{
-			operation.addLog("[" + timestamp + "] " + "Friendship rejected failed! From " + inviterID + " -> " + inviteeID + ". Multiple edges found." + " [Thread id: " + Thread.currentThread().getId() + "]");
+			operation.addLog("[" + timestamp + "] " + "Friendship rejected from " + inviterID + " -> " + inviteeID
+					+ " [Thread id: " + Thread.currentThread().getId() + "]");
+		} else {
+			operation.addLog("[" + timestamp + "] " + "Friendship rejected failed! From " + inviterID + " -> "
+					+ inviteeID + ". Multiple edges found." + " [Thread id: " + Thread.currentThread().getId() + "]");
 		}
 		return runWithRetry(operation);
 	}
 
-
 	@Override
 	public int viewProfile(int requesterID, int profileOwnerID,
-						   HashMap<String, ByteIterator> result, boolean insertImage, boolean testMode) {
+			HashMap<String, ByteIterator> result, boolean insertImage, boolean testMode) {
 		// get all the attributes
 		try {
 			long timestamp = Instant.now().toEpochMilli();
 			GraphTraversalSource traversal = g_read.with("cache", cache);
-			List<Map<String, Object>> resultsList = runTraversalWithProfile(() ->
-							traversal.V().hasLabel("users").has("userid", profileOwnerID)
-									.project("profile", "pendingFriendCount", "friendCount")
-									.by(__.valueMap())
-									.by(__.inE("friendship").has("status", "pending").outV().count())
-									.by(__.bothE("friendship").has("status", "friend").otherV().count()),
-					showProfile
-			);
+			List<Map<String, Object>> resultsList = runTraversalWithProfile(
+					() -> traversal.V().hasLabel("users").has("userid", profileOwnerID)
+							.project("profile", "pendingFriendCount", "friendCount")
+							.by(__.valueMap())
+							.by(__.inE("friendship").has("status", "pending").outV().count())
+							.by(__.bothE("friendship").has("status", "friend").otherV().count()),
+					showProfile);
 
 			Map<String, Object> resultMap = resultsList.isEmpty() ? null : resultsList.get(0);
 			if (resultMap == null) {
@@ -585,7 +610,9 @@ public class JanusGraphClient extends DB{
 
 			result.put("pendingcount", new StringByteIterator(String.valueOf(pendingFriendCount)));
 			result.put("friendcount", new StringByteIterator(String.valueOf(friendCount)));
-			logger.info("[" + timestamp + "] " + "View Profile: " + "userid: " + result.get("userid") +" pendingcount: " + result.get("pendingcount") +" friendcount: " + result.get("friendcount") + " [Thread id: " + Thread.currentThread().getId() + "]");
+			logger.info("[" + timestamp + "] " + "View Profile: " + "userid: " + result.get("userid")
+					+ " pendingcount: " + result.get("pendingcount") + " friendcount: " + result.get("friendcount")
+					+ " [Thread id: " + Thread.currentThread().getId() + "]");
 
 			return SUCCESS;
 		} catch (Exception e) {
@@ -599,21 +626,22 @@ public class JanusGraphClient extends DB{
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("rejectFriend-%d-%d-%d", friendid1, friendid2, timestamp);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
-				g.V().hasLabel("users").has("userid", friendid1)
-						.bothE("friendship")
-						.has("status", "friend")
-						.where(__.otherV().hasLabel("users").has("userid", friendid2))
-						.drop()
-						.iterate();
-				});
-		operation.addLog("[" + timestamp + "] " + "Friendship thawed from " + friendid1 + " -> " + friendid2 + " [Thread id: " + Thread.currentThread().getId() + "]");
+			g.V().hasLabel("users").has("userid", friendid1)
+					.bothE("friendship")
+					.has("status", "friend")
+					.where(__.otherV().hasLabel("users").has("userid", friendid2))
+					.drop()
+					.iterate();
+		});
+		operation.addLog("[" + timestamp + "] " + "Friendship thawed from " + friendid1 + " -> " + friendid2
+				+ " [Thread id: " + Thread.currentThread().getId() + "]");
 		return runWithRetry(operation);
 	}
 
 	@Override
 	public int listFriends(int requesterID, int profileOwnerID,
-						   Set<String> fields, Vector<HashMap<String, ByteIterator>> result,
-						   boolean insertImage, boolean testMode) {
+			Set<String> fields, Vector<HashMap<String, ByteIterator>> result,
+			boolean insertImage, boolean testMode) {
 		// gets the list of friends for a member.
 		if (requesterID < 0 || profileOwnerID < 0)
 			return ERROR;
@@ -623,21 +651,17 @@ public class JanusGraphClient extends DB{
 			List<Map<Object, Object>> friends;
 
 			if (fields != null && fields.size() > 0) {
-				friends = runTraversalWithProfile(() ->
-								traversal.V().hasLabel("users").has("userid", profileOwnerID)
-										.bothE("friendship").has("status", "friend")
-										.otherV()
-										.valueMap(fields.toArray(new String[0])),
-						showProfile
-				);
+				friends = runTraversalWithProfile(() -> traversal.V().hasLabel("users").has("userid", profileOwnerID)
+						.bothE("friendship").has("status", "friend")
+						.otherV()
+						.valueMap(fields.toArray(new String[0])),
+						showProfile);
 			} else {
-				friends = runTraversalWithProfile(() ->
-								traversal.V().hasLabel("users").has("userid", profileOwnerID)
-										.bothE("friendship").has("status", "friend")
-										.otherV()
-										.valueMap("userid", "fname", "lname"),
-						showProfile
-				);
+				friends = runTraversalWithProfile(() -> traversal.V().hasLabel("users").has("userid", profileOwnerID)
+						.bothE("friendship").has("status", "friend")
+						.otherV()
+						.valueMap("userid", "fname", "lname"),
+						showProfile);
 			}
 
 			for (Map<Object, Object> friendData : friends) {
@@ -660,18 +684,18 @@ public class JanusGraphClient extends DB{
 	}
 
 	@Override
-	public int viewFriendReq(int profileOwnerID, Vector<HashMap<String,ByteIterator>> results, boolean insertImage, boolean testMode) {
+	public int viewFriendReq(int profileOwnerID, Vector<HashMap<String, ByteIterator>> results, boolean insertImage,
+			boolean testMode) {
 		// gets the list of pending friend requests for a member.
 		try {
 			long timestamp = Instant.now().toEpochMilli();
 			GraphTraversalSource traversal = g_read.with("cache", cache);
-			List<Map<Object, Object>> pendingRequests = runTraversalWithProfile(() ->
-							traversal.V().hasLabel("users").has("userid", profileOwnerID)
-									.inE("friendship").has("status", "pending")
-									.outV()
-									.valueMap("userid", "fname", "lname"),
-					showProfile
-			);
+			List<Map<Object, Object>> pendingRequests = runTraversalWithProfile(
+					() -> traversal.V().hasLabel("users").has("userid", profileOwnerID)
+							.inE("friendship").has("status", "pending")
+							.outV()
+							.valueMap("userid", "fname", "lname"),
+					showProfile);
 
 			for (Map<Object, Object> friendData : pendingRequests) {
 				HashMap<String, ByteIterator> friendMap = new HashMap<>();
@@ -685,7 +709,8 @@ public class JanusGraphClient extends DB{
 				});
 				results.add(friendMap);
 			}
-			logger.info("[" + timestamp + "] " + "View pending friendship, userid:" + profileOwnerID + " result: " + results.size() + " [Thread id: " + Thread.currentThread().getId() + "]");
+			logger.info("[" + timestamp + "] " + "View pending friendship, userid:" + profileOwnerID + " result: "
+					+ results.size() + " [Thread id: " + Thread.currentThread().getId() + "]");
 
 			return SUCCESS;
 		} catch (Exception e) {
@@ -694,9 +719,8 @@ public class JanusGraphClient extends DB{
 		}
 	}
 
-
 	@Override
-	public int queryPendingFriendshipIds(int inviteeid, Vector<Integer> pendingIds){
+	public int queryPendingFriendshipIds(int inviteeid, Vector<Integer> pendingIds) {
 		try {
 			GraphTraversalSource traversal = g_read.with("cache", cache);
 			List<Object> pendingUserIds = traversal.V().hasLabel("users").has("userid", inviteeid)
@@ -716,7 +740,7 @@ public class JanusGraphClient extends DB{
 	}
 
 	@Override
-	public int queryConfirmedFriendshipIds(int profileId, Vector<Integer> confirmedIds){
+	public int queryConfirmedFriendshipIds(int profileId, Vector<Integer> confirmedIds) {
 		try {
 			GraphTraversalSource traversal = g_read.with("cache", cache);
 			List<Object> confirmedUserIds = traversal.V().hasLabel("users").has("userid", profileId)
@@ -729,33 +753,40 @@ public class JanusGraphClient extends DB{
 			}
 
 			return SUCCESS;
-	} catch (Exception e) {
-		e.printStackTrace();
-		return ERROR;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ERROR;
+		}
 	}
-	}
-
 
 	@Override
 	public int viewTopKResources(int requesterID, int profileOwnerID, int k,
-								 Vector<HashMap<String, ByteIterator>> result) {return SUCCESS;}
+			Vector<HashMap<String, ByteIterator>> result) {
+		return SUCCESS;
+	}
 
 	@Override
 	public int getCreatedResources(int creatorID,
-								   Vector<HashMap<String, ByteIterator>> result) {return SUCCESS;}
+			Vector<HashMap<String, ByteIterator>> result) {
+		return SUCCESS;
+	}
 
 	@Override
 	public int viewCommentOnResource(int requesterID, int profileOwnerID,
-									 int resourceID, Vector<HashMap<String, ByteIterator>> result) {return SUCCESS;}
+			int resourceID, Vector<HashMap<String, ByteIterator>> result) {
+		return SUCCESS;
+	}
 
 	@Override
 	public int postCommentOnResource(int commentCreatorID, int profileOwnerID,
-									 int resourceID, HashMap<String, ByteIterator> values) {return SUCCESS;}
+			int resourceID, HashMap<String, ByteIterator> values) {
+		return SUCCESS;
+	}
 
 	@Override
 	public int delCommentOnResource(int resourceCreatorID, int resourceID,
-									int manipulationID) {return SUCCESS;}
-
-
+			int manipulationID) {
+		return SUCCESS;
+	}
 
 }
