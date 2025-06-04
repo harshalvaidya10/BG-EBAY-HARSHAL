@@ -535,10 +535,36 @@ public class JanusGraphClient extends DB {
 		return runWithRetry(operation);
 	}
 
+	// @Override
+	// public int CreateFriendship(int friendid1, int friendid2) {
+	// long timestamp = Instant.now().toEpochMilli();
+	// String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1,
+	// friendid2, timestamp);
+	// DefaultLoggableOperation operation = new
+	// DefaultLoggableOperation(operationId, () -> {
+	// g.V().hasLabel("users").has("userid", friendid1).as("inviter")
+	// .V().hasLabel("users").has("userid", friendid2).as("invitee")
+	// .coalesce(__.select("inviter"), __.constant("Vertex with userid " + friendid1
+	// + " not found"))
+	// .coalesce(__.select("invitee"), __.constant("Vertex with userid " + friendid2
+	// + " not found"))
+	// .addE("friendship").from("inviter").to("invitee")
+	// .property("status", "friend")
+	// .iterate();
+	// });
+	// operation.addLog("[" + timestamp + "] " + "Friendship established from " +
+	// friendid1 + " -> " + friendid2
+	// + " [Thread id: " + Thread.currentThread().getId() + "]");
+	// return runWithRetry(operation);
+	// }
+
 	@Override
 	public int CreateFriendship(int friendid1, int friendid2) {
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1, friendid2, timestamp);
+
+		System.out.println(">>> DEBUG: Called CreateFriendship for " + friendid1 + " <-> " + friendid2);
+
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
 			g.V().hasLabel("users").has("userid", friendid1).as("inviter")
 					.V().hasLabel("users").has("userid", friendid2).as("invitee")
@@ -548,7 +574,8 @@ public class JanusGraphClient extends DB {
 					.property("status", "friend")
 					.iterate();
 		});
-		operation.addLog("[" + timestamp + "] " + "Friendship established from " + friendid1 + " -> " + friendid2
+
+		operation.addLog("[" + timestamp + "] Friendship established from " + friendid1 + " -> " + friendid2
 				+ " [Thread id: " + Thread.currentThread().getId() + "]");
 		return runWithRetry(operation);
 	}
