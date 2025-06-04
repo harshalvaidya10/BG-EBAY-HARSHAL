@@ -512,6 +512,7 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public int inviteFriend(int inviterID, int inviteeID) {
+		System.out.println(">>>> JanusGraphClient: inviteFriend() called with " + inviterid + ", " + inviteeid);
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("inviteFriend-%d-%d-%d", inviterID, inviteeID, timestamp);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
@@ -563,6 +564,7 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public int CreateFriendship(int friendid1, int friendid2) {
+		System.out.println(">>>> JanusGraphClient: CreateFriendship() called with " + friendid1 + ", " + friendid2);
 		System.out.println("Attempting to create friendship from " + friendid1 + " to " + friendid2);
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1, friendid2, timestamp);
