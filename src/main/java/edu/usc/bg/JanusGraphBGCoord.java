@@ -52,7 +52,11 @@ public class JanusGraphBGCoord {
     private static final class Stat {
         final double tp;
         final boolean sla;
-        Stat(double tp, boolean sla) { this.tp = tp; this.sla = sla; }
+
+        Stat(double tp, boolean sla) {
+            this.tp = tp;
+            this.sla = sla;
+        }
     }
 
     public boolean ifWriteWorkload() {
@@ -60,7 +64,8 @@ public class JanusGraphBGCoord {
         float rejectFriendReqAction = Float.parseFloat(coreProps.getProperty("RejectFriendReqAction"));
         float thawFriendshipAction = Float.parseFloat(coreProps.getProperty("ThawFriendshipAction"));
         float inviteFriendAction = Float.parseFloat(coreProps.getProperty("InviteFriendAction"));
-        return acceptFriendReqAction > 0 || rejectFriendReqAction > 0 || thawFriendshipAction > 0 || inviteFriendAction > 0;
+        return acceptFriendReqAction > 0 || rejectFriendReqAction > 0 || thawFriendshipAction > 0
+                || inviteFriendAction > 0;
     }
 
     public static void main(String[] args) throws Exception {
@@ -79,7 +84,7 @@ public class JanusGraphBGCoord {
         }
 
         // makedir
-        String dirPath = "./"+coord.directory;
+        String dirPath = "./" + coord.directory;
         File directory = new File(dirPath);
 
         if (!directory.exists()) {
@@ -93,17 +98,18 @@ public class JanusGraphBGCoord {
             System.out.println("Directory already exists.");
         }
         coord.isWrite = coord.ifWriteWorkload();
-        if(!coord.isWrite){
+        if (!coord.isWrite) {
             // if is not write work load, load and warmup once
-            if(coord.doLoad){
-//                coord.clearDBFDBManner();
-//                try (Scanner scanner = new Scanner(System.in)) { // 使用 try-with-resources 确保 Scanner 关闭
-//                    if (scanner.hasNextLine()) {
-//                        String line = scanner.nextLine();
-//                    } else {
-//                        System.err.println("No More Lines");
-//                    }
-//                }
+            if (coord.doLoad) {
+                // coord.clearDBFDBManner();
+                // try (Scanner scanner = new Scanner(System.in)) { // 使用 try-with-resources 确保
+                // Scanner 关闭
+                // if (scanner.hasNextLine()) {
+                // String line = scanner.nextLine();
+                // } else {
+                // System.err.println("No More Lines");
+                // }
+                // }
 
                 Process loadProcess = coord.loadDB();
 
@@ -111,24 +117,22 @@ public class JanusGraphBGCoord {
                         "SHUTDOWN!!!",
                         "mainclass");
 
-                coord.saveToFile(directory+"/BGMainLoad-" + "0" +".log", bgLoadLog);
+                coord.saveToFile(directory + "/BGMainLoad-" + "0" + ".log", bgLoadLog);
             }
-            if(coord.doWarmup){
+            if (coord.doWarmup) {
                 coord.warmUp(0);
             }
         }
 
-        if(coord.objective.equals("socialites")){
+        if (coord.objective.equals("socialites")) {
             int res = coord.runBinarySearch();
             System.out.println("Result: " + res);
-        }
-        else if(coord.objective.equals("soar")) {
+        } else if (coord.objective.equals("soar")) {
             int res = coord.findMaxThroughput(coord.minimum);
             System.out.println("Result: " + res);
-        }else{
+        } else {
             System.out.println("Do not support input objective");
         }
-
 
         System.exit(0);
     }
@@ -137,7 +141,7 @@ public class JanusGraphBGCoord {
         try {
             double tp = measureThroughput(threads, run);
             boolean sla = checkSLA(run);
-            System.out.println("threads: " + threads + " ," + " count: "+ run + " SLA: " + sla);
+            System.out.println("threads: " + threads + " ," + " count: " + run + " SLA: " + sla);
             return new Stat(tp, sla);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -145,38 +149,38 @@ public class JanusGraphBGCoord {
     }
 
     public int findMaxThroughput(int startThreads) throws Exception {
-        final int MAX_THREADS = 65_536;     // 保护上限
-        int runs = 0;                       // 实验轮计数
+        final int MAX_THREADS = 65_536; // 保护上限
+        int runs = 0; // 实验轮计数
 
         /* ---------- 1) 指数扩张 ---------- */
         int lastGoodThreads = startThreads;
-        Stat lastGood       = probe(startThreads, runs++);
+        Stat lastGood = probe(startThreads, runs++);
 
-        int rightThreads    = startThreads * 2;
-        Stat right          = probe(rightThreads, runs++);
+        int rightThreads = startThreads * 2;
+        Stat right = probe(rightThreads, runs++);
 
         // 持续放大：吞吐在涨 且 SLA 仍 pass
         while (right.sla && right.tp > lastGood.tp && rightThreads < MAX_THREADS) {
             lastGoodThreads = rightThreads;
-            lastGood        = right;
+            lastGood = right;
 
-            rightThreads   *= 2;
-            right           = probe(rightThreads, runs++);
+            rightThreads *= 2;
+            right = probe(rightThreads, runs++);
         }
 
         /* ---------- 2) 右边界回退到最近 pass ---------- */
         while (!right.sla) {
             int gap = rightThreads - lastGoodThreads;
 
-            if (gap <= 1) {                // 已经贴到左端还是 fail
-                return lastGoodThreads;    // 直接返回最大且 SLA=pass 的点
+            if (gap <= 1) { // 已经贴到左端还是 fail
+                return lastGoodThreads; // 直接返回最大且 SLA=pass 的点
             }
-            rightThreads = lastGoodThreads + gap / 2;  // 正常二分
-            right        = probe(rightThreads, runs++);
+            rightThreads = lastGoodThreads + gap / 2; // 正常二分
+            right = probe(rightThreads, runs++);
         }
 
-        int left  = lastGoodThreads;
-        int rightT = rightThreads;                 // 区间两端均满足 SLA
+        int left = lastGoodThreads;
+        int rightT = rightThreads; // 区间两端均满足 SLA
 
         /* ---------- 3) 带约束三分搜索 ---------- */
         return constrainedTernarySearch(left, rightT, runs);
@@ -199,13 +203,13 @@ public class JanusGraphBGCoord {
     }
 
     public double measureThroughput(int threadcount, int count) throws Exception {
-        if(doMonitor){
+        if (doMonitor) {
             String startMark = String.format("=== START TEST iteration=%d, threadCount=%d ===", count, threadcount);
         }
 
         startClient(threadcount, count);
         String throughputPrefix = "OVERALLTHROUGHPUT(SESSIONS/SECS):";
-//        File bgLog = new File(directory, "BGMainClass-" + count + ".log");
+        // File bgLog = new File(directory, "BGMainClass-" + count + ".log");
         final String regex = "^BGMainClass-.*" + Pattern.quote(String.valueOf(count)) + Pattern.quote(".log") + "$";
         final Pattern fileNamePattern = Pattern.compile(regex);
         File directoryy = new File(directory);
@@ -233,9 +237,9 @@ public class JanusGraphBGCoord {
     }
 
     private int constrainedTernarySearch(int l, int r, int runs) throws Exception {
-        Map<Integer, Stat> cache = new HashMap<>();   // 避免重复测同一线程数
+        Map<Integer, Stat> cache = new HashMap<>(); // 避免重复测同一线程数
 
-        while (r - l > 4) {                           // 区间>4 时继续分割
+        while (r - l > 4) { // 区间>4 时继续分割
             int m1 = l + (r - l) / 3;
             int m2 = r - (r - l) / 3;
 
@@ -243,22 +247,24 @@ public class JanusGraphBGCoord {
             Stat s2 = cache.computeIfAbsent(m2, t -> probe(t, runs + cache.size()));
 
             /* 先处理不满足 SLA 的情况 */
-            if (!s2.sla) {            // 右 1/3 不合格，整体右移没意义
+            if (!s2.sla) { // 右 1/3 不合格，整体右移没意义
                 r = m2 - 1;
                 continue;
             }
-            if (!s1.sla) {            // 左 1/3 不合格，只能向右
+            if (!s1.sla) { // 左 1/3 不合格，只能向右
                 l = m1 + 1;
                 continue;
             }
             /* 两点都 pass：按吞吐量正常三分 */
-            if (s1.tp < s2.tp) l = m1 + 1;
-            else               r = m2 - 1;
+            if (s1.tp < s2.tp)
+                l = m1 + 1;
+            else
+                r = m2 - 1;
         }
 
         /* ---------- 4) 枚举剩余极小区间 ---------- */
         double bestTp = -1;
-        int    bestTh = l;
+        int bestTh = l;
         for (int t = l; t <= r; t++) {
             Stat s = cache.computeIfAbsent(t, x -> probe(x, runs + cache.size()));
             if (s.sla && s.tp > bestTp) {
@@ -266,7 +272,7 @@ public class JanusGraphBGCoord {
                 bestTh = t;
             }
         }
-        return bestTh;      // 一定满足 SLA
+        return bestTh; // 一定满足 SLA
     }
 
     public boolean checkSLA(int count) {
@@ -274,12 +280,12 @@ public class JanusGraphBGCoord {
         String staleLinePrefix = "[OVERALL], Staleness(staleReads/totalReads), ";
         String throughputPrefix = "OVERALLTHROUGHPUT(SESSIONS/SECS):";
 
-//        File bgLog = new File(directory, "BGMainClass-" + count + ".log");
-//        double satisPerc = parseValueFromFile(
-//                bgLog,
-//                satisLinePrefix,
-//                "Error reading satisPerc BG log: "
-//        );
+        // File bgLog = new File(directory, "BGMainClass-" + count + ".log");
+        // double satisPerc = parseValueFromFile(
+        // bgLog,
+        // satisLinePrefix,
+        // "Error reading satisPerc BG log: "
+        // );
         final String regex = "^BGMainClass-.*" + Pattern.quote(String.valueOf(count)) + Pattern.quote(".log") + "$";
         final Pattern fileNamePattern = Pattern.compile(regex);
         File directoryy = new File(directory);
@@ -296,10 +302,9 @@ public class JanusGraphBGCoord {
         for (File bgLog : logFiles) {
             System.out.println("Processing: " + bgLog.getName());
             double satisPerc = parseValueFromFile(
-                bgLog,
-                satisLinePrefix,
-                "Error reading satisPerc BG log: "
-            );
+                    bgLog,
+                    satisLinePrefix,
+                    "Error reading satisPerc BG log: ");
             double throughput = parseValueFromFile(
                     bgLog,
                     throughputPrefix,
@@ -310,31 +315,31 @@ public class JanusGraphBGCoord {
         }
         totalSLA = totalSLA / totalThroughput;
 
-//        double satisPerc = 0;
+        // double satisPerc = 0;
         System.out.println("satisPerc read from BGMainClass-" + count + " is: " + totalSLA);
 
         if (totalSLA < 0) {
             return false;
         }
 
-//        if (validation) {
-//            File valLog = new File(directory, "BGMainClass-" + count + ".log");
-//            double staleDataPerc = parseValueFromFile(
-//                    valLog,
-//                    staleLinePrefix,
-//                    "Error reading BG log: " + count + " "
-//            );
-//            System.out.println("Staleness read from BGMainClass-" + count + " is: " + staleDataPerc);
-//
-//            if (staleDataPerc < 0) {
-//                return false;
-//            }
-//            return (satisPerc >= perc && staleDataPerc <= staleness);
-//        }
+        // if (validation) {
+        // File valLog = new File(directory, "BGMainClass-" + count + ".log");
+        // double staleDataPerc = parseValueFromFile(
+        // valLog,
+        // staleLinePrefix,
+        // "Error reading BG log: " + count + " "
+        // );
+        // System.out.println("Staleness read from BGMainClass-" + count + " is: " +
+        // staleDataPerc);
+        //
+        // if (staleDataPerc < 0) {
+        // return false;
+        // }
+        // return (satisPerc >= perc && staleDataPerc <= staleness);
+        // }
 
         return (totalSLA >= perc);
     }
-
 
     public void warmUp(int count) throws IOException {
         int userCount;
@@ -355,7 +360,7 @@ public class JanusGraphBGCoord {
 
         switch (userCount) {
             case 1000:
-                if(friendCount == 10){
+                if (friendCount == 10) {
                     maxExeTime = 20;
                 } else {
                     maxExeTime = 120;
@@ -363,7 +368,7 @@ public class JanusGraphBGCoord {
                 warmUpWorkload = "workloads/warmupWorkload1";
                 break;
             case 10000:
-                if(friendCount == 10){
+                if (friendCount == 10) {
                     maxExeTime = 300;
                 } else {
                     maxExeTime = 600;
@@ -371,7 +376,7 @@ public class JanusGraphBGCoord {
                 warmUpWorkload = "workloads/warmupWorkload2";
                 break;
             case 100000:
-                if(friendCount == 10){
+                if (friendCount == 10) {
                     maxExeTime = 600;
                 } else {
                     maxExeTime = 2400;
@@ -386,10 +391,9 @@ public class JanusGraphBGCoord {
                 "Stop requested for workload. Now Joining!",
                 "mainclass");
 
-        saveToFile(directory+"/BGMainClass-warmup" + count + ".log", bgLog);
+        saveToFile(directory + "/BGMainClass-warmup" + count + ".log", bgLog);
 
     }
-
 
     private static double simulatePerformance(int threads) {
         return -Math.pow(threads - 50, 2) + 2500;
@@ -439,20 +443,26 @@ public class JanusGraphBGCoord {
         return bestValid;
     }
 
-//    private String[] clientIPs = new String[] {"10.199.64.85", "10.222.241.59", "10.222.253.221", "10.222.253.247"};
-// private String[] clientIPs = new String[] {"yiming-client-0.yiming-client", "yiming-client-1.yiming-client",
-//         "yiming-client-2.yiming-client", "yiming-client-3.yiming-client", "yiming-client-4.yiming-client",
-//         "yiming-client-5.yiming-client", "yiming-client-6.yiming-client", "yiming-client-7.yiming-client",
-//         "yiming-client-8.yiming-client", "yiming-client-9.yiming-client"};
+    // private String[] clientIPs = new String[] {"10.199.64.85", "10.222.241.59",
+    // "10.222.253.221", "10.222.253.247"};
+    // private String[] clientIPs = new String[] {"yiming-client-0.yiming-client",
+    // "yiming-client-1.yiming-client",
+    // "yiming-client-2.yiming-client", "yiming-client-3.yiming-client",
+    // "yiming-client-4.yiming-client",
+    // "yiming-client-5.yiming-client", "yiming-client-6.yiming-client",
+    // "yiming-client-7.yiming-client",
+    // "yiming-client-8.yiming-client", "yiming-client-9.yiming-client"};
 
-    private String[] clientIPs = new String[] {"localhost"};
+    private String[] clientIPs = new String[] { "localhost" };
+
     public void startClient(int threads, int count) throws Exception {
-        // run pipeline, clear logfiles -> clear DB -> loadDB -> issue queries -> validation(optional)
+        // run pipeline, clear logfiles -> clear DB -> loadDB -> issue queries ->
+        // validation(optional)
         clearLogFiles();
         System.out.println("files cleared");
-        if(isWrite){
+        if (isWrite) {
             // if it's write workload, do load and warmup each time
-            if(doLoad) {
+            if (doLoad) {
                 clearDBFDBManner();
                 Process loadProcess = loadDB();
 
@@ -460,15 +470,16 @@ public class JanusGraphBGCoord {
                         "SHUTDOWN!!!",
                         "mainclass");
 
-                saveToFile(directory+"/BGMainLoad-" + count +".log", bgLoadLog);
+                saveToFile(directory + "/BGMainLoad-" + count + ".log", bgLoadLog);
             }
 
-            if(doWarmup){
+            if (doWarmup) {
                 warmUp(count);
             }
         }
 
-        System.out.println("Distributing " + threads + " threads across " + clientIPs.length + " clients for run " + count);
+        System.out.println(
+                "Distributing " + threads + " threads across " + clientIPs.length + " clients for run " + count);
         int numClients = clientIPs.length;
         int threadsPerClient = (numClients > 0) ? threads / numClients : 0;
         int remainingThreads = (numClients > 0) ? threads % numClients : 0;
@@ -499,38 +510,34 @@ public class JanusGraphBGCoord {
         for (Future<?> future : futures) {
             try {
                 future.get();
-            }  catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 System.out.println("Interrupted while waiting for future to finish");
             }
         }
         executorService.shutdownNow();
 
+        // Process bgProcess = startBGMainClass(threads, duration, workload);
 
+        // String bgLog = watchProcessOutput(bgProcess,
+        // "Stop requested for workload. Now Joining!",
+        // "mainclass");
 
-//        Process bgProcess = startBGMainClass(threads, duration, workload);
-
-//        String bgLog = watchProcessOutput(bgProcess,
-//                "Stop requested for workload. Now Joining!",
-//                "mainclass");
-
-//        saveToFile(directory+"/BGMainClass-" + count +".log", bgLog);
+        // saveToFile(directory+"/BGMainClass-" + count +".log", bgLog);
     }
-
-
 
     private Process startBGMainClass(int threads, int maxExeTime, String workload, String clientIP) throws IOException {
         List<String> commands = new ArrayList<>();
         commands.add("java");
-        commands.add("-Xms18000m");                     // Initial heap size ~14GB
-        commands.add("-Xmx18000m");                     // Maximum heap size ~14GB
-//        commands.add("-XX:ActiveProcessorCount=30");
+        commands.add("-Xms18000m"); // Initial heap size ~14GB
+        commands.add("-Xmx18000m"); // Maximum heap size ~14GB
+        // commands.add("-XX:ActiveProcessorCount=30");
         commands.add("-XX:+UnlockExperimentalVMOptions"); // Needed for some subsequent options
-        commands.add("-XX:+UseG1GC");                   // Use G1 Garbage Collector
-        commands.add("-XX:MaxGCPauseMillis=75");        // Target max GC pause
-        commands.add("-XX:ParallelGCThreads=15");        // Parallel GC threads (Note: See comment below)
-        commands.add("-XX:ConcGCThreads=10");            // Concurrent GC threads (Note: See comment below)
-        commands.add("-XX:G1NewSizePercent=10");        // G1 Young Gen initial size
-        commands.add("-XX:G1MaxNewSizePercent=30");     // G1 Young Gen max size
+        commands.add("-XX:+UseG1GC"); // Use G1 Garbage Collector
+        commands.add("-XX:MaxGCPauseMillis=75"); // Target max GC pause
+        commands.add("-XX:ParallelGCThreads=15"); // Parallel GC threads (Note: See comment below)
+        commands.add("-XX:ConcGCThreads=10"); // Concurrent GC threads (Note: See comment below)
+        commands.add("-XX:G1NewSizePercent=10"); // G1 Young Gen initial size
+        commands.add("-XX:G1MaxNewSizePercent=30"); // G1 Young Gen max size
         commands.add("-XX:ActiveProcessorCount=14");
         commands.add("-Dlogback.configurationFile=/work/conf/logback.xml");
 
@@ -571,8 +578,11 @@ public class JanusGraphBGCoord {
             try {
                 return SSHExecutor.startRemoteCommand("root", clientIP, commands);
             } catch (UnsupportedOperationException e) {
-                System.err.println("FATAL: SSHExecutor.startRemoteCommand is not implemented. Remote execution unavailable. " + e.getMessage());
-                throw new IOException("Remote execution failed due to missing SSHExecutor.startRemoteCommand implementation.", e);
+                System.err.println(
+                        "FATAL: SSHExecutor.startRemoteCommand is not implemented. Remote execution unavailable. "
+                                + e.getMessage());
+                throw new IOException(
+                        "Remote execution failed due to missing SSHExecutor.startRemoteCommand implementation.", e);
             } catch (IOException e) {
                 System.err.println("Failed to start remote command on " + clientIP + ": " + e.getMessage());
                 e.printStackTrace();
@@ -580,30 +590,27 @@ public class JanusGraphBGCoord {
             }
 
         }
-         //SSH connect to client IP, return pb.
-
-
+        // SSH connect to client IP, return pb.
 
     }
 
     private void loadDBFDBManner() {
-
 
     }
 
     private Process loadDB() throws IOException {
         List<String> commands = new ArrayList<>();
         commands.add("java");
-        commands.add("-Xms18000m");                     // Initial heap size ~14GB
-        commands.add("-Xmx18000m");                     // Maximum heap size ~14GB
-//        commands.add("-XX:ActiveProcessorCount=30");
+        commands.add("-Xms18000m"); // Initial heap size ~14GB
+        commands.add("-Xmx18000m"); // Maximum heap size ~14GB
+        // commands.add("-XX:ActiveProcessorCount=30");
         commands.add("-XX:+UnlockExperimentalVMOptions"); // Needed for some subsequent options
-        commands.add("-XX:+UseG1GC");                   // Use G1 Garbage Collector
-        commands.add("-XX:MaxGCPauseMillis=75");        // Target max GC pause
-        commands.add("-XX:ParallelGCThreads=12");        // Parallel GC threads (Note: See comment below)
-        commands.add("-XX:ConcGCThreads=10");            // Concurrent GC threads (Note: See comment below)
-        commands.add("-XX:G1NewSizePercent=10");        // G1 Young Gen initial size
-        commands.add("-XX:G1MaxNewSizePercent=30");     // G1 Young Gen max size
+        commands.add("-XX:+UseG1GC"); // Use G1 Garbage Collector
+        commands.add("-XX:MaxGCPauseMillis=75"); // Target max GC pause
+        commands.add("-XX:ParallelGCThreads=12"); // Parallel GC threads (Note: See comment below)
+        commands.add("-XX:ConcGCThreads=10"); // Concurrent GC threads (Note: See comment below)
+        commands.add("-XX:G1NewSizePercent=10"); // G1 Young Gen initial size
+        commands.add("-XX:G1MaxNewSizePercent=30"); // G1 Young Gen max size
         commands.add("-XX:ActiveProcessorCount=14");
         commands.add("-Dlogback.configurationFile=/data/bg/conf/logback.xml");
 
@@ -626,6 +633,14 @@ public class JanusGraphBGCoord {
         commands.add("-s");
         commands.add("true");
 
+        System.out.println("populateWorkload=" + populateWorkload);
+        System.out.println("commands=" + commands);
+        for (int i = 0; i < commands.size(); i++) {
+            if (commands.get(i) == null) {
+                System.out.println("Null at command index: " + i);
+            }
+        }
+
         ProcessBuilder pb = new ProcessBuilder(commands);
         pb.redirectErrorStream(true);
 
@@ -640,14 +655,12 @@ public class JanusGraphBGCoord {
         }
     }
 
-
     private String watchProcessOutput(Process process, String keywords, String threadName) throws IOException {
         StringBuilder sb = new StringBuilder();
 
         Pattern numericPattern = Pattern.compile("^\\d+\\s*,\\s*\\d+$", Pattern.MULTILINE);
         InputStream combinedStream = new SequenceInputStream(
-                process.getInputStream(), process.getErrorStream()
-        );
+                process.getInputStream(), process.getErrorStream());
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(combinedStream))) {
 
@@ -656,7 +669,7 @@ public class JanusGraphBGCoord {
 
             while (running && (line = br.readLine()) != null) {
                 boolean isNumericStat = numericPattern.matcher(line).matches();
-                if(isNumericStat){
+                if (isNumericStat) {
                     continue;
                 }
                 sb.append(line).append("\n");
@@ -679,8 +692,6 @@ public class JanusGraphBGCoord {
 
         return sb.toString();
     }
-
-
 
     private void clearLogFiles() {
         String directory = "./";
@@ -764,7 +775,6 @@ public class JanusGraphBGCoord {
     public void clearDBFDBManner() {
     }
 
-
     public void readCmdArgs(String[] args) {
         /**
          * -workload: specified workload, should be a file
@@ -775,7 +785,8 @@ public class JanusGraphBGCoord {
          * -directory: log directory name
          * -minimum: min threads
          * -maximum: maxi threads
-         * -objective: rate soar or socialites, "soar" means rate soar, "socialites" means rate socialites
+         * -objective: rate soar or socialites, "soar" means rate soar, "socialites"
+         * means rate socialites
          * -validation: true or false, do validation or not
          */
         for (int i = 0; i < args.length; i++) {
