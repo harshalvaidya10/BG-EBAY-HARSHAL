@@ -440,10 +440,12 @@ public class JanusGraphBGCoord {
     }
 
 //    private String[] clientIPs = new String[] {"10.199.64.85", "10.222.241.59", "10.222.253.221", "10.222.253.247"};
-private String[] clientIPs = new String[] {"yiming-client-0.yiming-client", "yiming-client-1.yiming-client",
-        "yiming-client-2.yiming-client", "yiming-client-3.yiming-client", "yiming-client-4.yiming-client",
-        "yiming-client-5.yiming-client", "yiming-client-6.yiming-client", "yiming-client-7.yiming-client",
-        "yiming-client-8.yiming-client", "yiming-client-9.yiming-client"};
+// private String[] clientIPs = new String[] {"yiming-client-0.yiming-client", "yiming-client-1.yiming-client",
+//         "yiming-client-2.yiming-client", "yiming-client-3.yiming-client", "yiming-client-4.yiming-client",
+//         "yiming-client-5.yiming-client", "yiming-client-6.yiming-client", "yiming-client-7.yiming-client",
+//         "yiming-client-8.yiming-client", "yiming-client-9.yiming-client"};
+
+    private String[] clientIPs = new String[] {"localhost"};
     public void startClient(int threads, int count) throws Exception {
         // run pipeline, clear logfiles -> clear DB -> loadDB -> issue queries -> validation(optional)
         clearLogFiles();
@@ -544,7 +546,8 @@ private String[] clientIPs = new String[] {"yiming-client-0.yiming-client", "yim
         commands.add("-db");
         commands.add("JanusGraph.src.janusgraph.JanusGraphClient");
         commands.add("-janusGraphIp");
-        commands.add("1.1.1.1");
+        // commands.add("1.1.1.1");
+        commands.add(janusGraphIp);
         commands.add("-P");
         commands.add(workload);
         commands.add("-doCache");
@@ -614,7 +617,8 @@ private String[] clientIPs = new String[] {"yiming-client-0.yiming-client", "yim
         commands.add("-threads");
         commands.add("10");
         commands.add("-janusGraphIp");
-        commands.add("1.1.1.1");
+        // commands.add("1.1.1.1");
+        commands.add(janusGraphIp);
         commands.add("-db");
         commands.add("JanusGraph.src.janusgraph.JanusGraphClient");
         commands.add("-P");
