@@ -1,4 +1,4 @@
-operationcount=1
+operationcount=10
 workload=edu.usc.bg.workloads.CoreWorkload
 usercount=1000
 

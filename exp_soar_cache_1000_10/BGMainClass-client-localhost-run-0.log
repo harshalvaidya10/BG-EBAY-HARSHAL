@@ -13,180 +13,15 @@ listfriendsaction
 {janusGraphIp=10.10.1.2, doCache=true, expectedlatency=0.1, workloadfile=listfriendsaction, maxexecutiontime=60, threadcount=40, db=JanusGraph.src.janusgraph.JanusGraphClient}
 Running BG in Partitioned mode
 *****max execution time specified : 60
-BG Client: ThreadCount =1
+BG Client: ThreadCount =10
 
 Loading workload...
 0
 SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-Jun 09, 2025 9:04:29 PM org.yaml.snakeyaml.internal.Logger warn
+Jun 10, 2025 6:05:43 AM org.yaml.snakeyaml.internal.Logger warn
 WARNING: Failed to find field for org.apache.tinkerpop.gremlin.driver.Settings.serializers
- (might take a few minutes for large data sets)
-java.util.concurrent.ExecutionException: org.apache.tinkerpop.gremlin.driver.exception.ResponseException: Evaluation exceeded the configured 'evaluationTimeout' threshold of 30000 ms or evaluation was otherwise cancelled directly for request [// 回滚当前事务（如果有）
-graph.tx().rollback()
-
-// 打开管理接口
-mgmt = graph.openManagement()
-
-userIndexExists = mgmt.getGraphIndex('user_id_index') != null
-if (!userIndexExists) {
-    println "Composite index 'user_id_index' does not exist. Creating new index..."
-    userId = mgmt.getPropertyKey("userid") ?: mgmt.makePropertyKey("userid").dataType(Integer.class).make()
-    users = mgmt.getVertexLabel('users') ?: mgmt.makeVertexLabel("users").make()
-    mgmt.buildIndex('user_id_index', Vertex.class)
-            .addKey(userId)
-            .unique()
-            .indexOnly(users)  // 限制索引仅适用于 users 顶点
-            .buildCompositeIndex()
-    mgmt.commit()
-
-    println "Waiting for composite index 'user_id_index' to become available..."
-    ManagementSystem.awaitGraphIndexStatus(graph, 'user_id_index').status(SchemaStatus.ENABLED).call()
-
-    println "Reindexing existing data for composite index 'user_id_index'..."
-    mgmt = graph.openManagement()
-    mgmt.updateIndex(mgmt.getGraphIndex('user_id_index'), SchemaAction.REINDEX).get()
-    mgmt.commit()
-} else {
-    println "Composite index 'user_id_index' already exists. Skipping creation..."
-}
-
-mgmt = graph.openManagement()
-friendship = mgmt.getEdgeLabel("friendship") ?: mgmt.makeEdgeLabel("friendship").make()
-
-status = mgmt.getPropertyKey("status") ?: mgmt.makePropertyKey("status").dataType(String.class).make()
-
-friendshipIndexExists = mgmt.getRelationIndex(friendship, 'friendship_status_index') != null
-if (!friendshipIndexExists) {
-    println "Vertex-centric index 'friendship_status_index' does not exist. Creating new index..."
-
-    mgmt.buildEdgeIndex(friendship, 'friendship_status_index', Direction.BOTH, Order.asc, status)
-    mgmt.commit()
-
-    println "Waiting for vertex-centric index 'friendship_status_index' to become available..."
-    ManagementSystem.awaitRelationIndexStatus(graph, 'friendship_status_index', 'friendship').status(SchemaStatus.ENABLED).call()
-
-    println "Reindexing existing data for vertex-centric index 'friendship_status_index'..."
-    mgmt = graph.openManagement()
-    mgmt.updateIndex(mgmt.getRelationIndex(friendship, 'friendship_status_index'), SchemaAction.REINDEX).get()
-    mgmt.commit()
-} else {
-    println "Vertex-centric index 'friendship_status_index' already exists. Skipping creation..."
-}
-
-println "Index creation and reindexing completed successfully!"]
-	at java.base/java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:395)
-	at java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2005)
-	at JanusGraph.src.janusgraph.JanusGraphClient.createSchema(JanusGraphClient.java:527)
-	at JanusGraph.src.janusgraph.JanusGraphClient.init(JanusGraphClient.java:384)
-	at edu.usc.bg.base.DBWrapper.init(DBWrapper.java:62)
-	at edu.usc.bg.base.Client.initializeDB(Client.java:2613)
-	at edu.usc.bg.base.Client.runBG(Client.java:1526)
-	at edu.usc.bg.BGMainClass.main(BGMainClass.java:47)
-Caused by: org.apache.tinkerpop.gremlin.driver.exception.ResponseException: Evaluation exceeded the configured 'evaluationTimeout' threshold of 30000 ms or evaluation was otherwise cancelled directly for request [// 回滚当前事务（如果有）
-graph.tx().rollback()
-
-// 打开管理接口
-mgmt = graph.openManagement()
-
-userIndexExists = mgmt.getGraphIndex('user_id_index') != null
-if (!userIndexExists) {
-    println "Composite index 'user_id_index' does not exist. Creating new index..."
-    userId = mgmt.getPropertyKey("userid") ?: mgmt.makePropertyKey("userid").dataType(Integer.class).make()
-    users = mgmt.getVertexLabel('users') ?: mgmt.makeVertexLabel("users").make()
-    mgmt.buildIndex('user_id_index', Vertex.class)
-            .addKey(userId)
-            .unique()
-            .indexOnly(users)  // 限制索引仅适用于 users 顶点
-            .buildCompositeIndex()
-    mgmt.commit()
-
-    println "Waiting for composite index 'user_id_index' to become available..."
-    ManagementSystem.awaitGraphIndexStatus(graph, 'user_id_index').status(SchemaStatus.ENABLED).call()
-
-    println "Reindexing existing data for composite index 'user_id_index'..."
-    mgmt = graph.openManagement()
-    mgmt.updateIndex(mgmt.getGraphIndex('user_id_index'), SchemaAction.REINDEX).get()
-    mgmt.commit()
-} else {
-    println "Composite index 'user_id_index' already exists. Skipping creation..."
-}
-
-mgmt = graph.openManagement()
-friendship = mgmt.getEdgeLabel("friendship") ?: mgmt.makeEdgeLabel("friendship").make()
-
-status = mgmt.getPropertyKey("status") ?: mgmt.makePropertyKey("status").dataType(String.class).make()
-
-friendshipIndexExists = mgmt.getRelationIndex(friendship, 'friendship_status_index') != null
-if (!friendshipIndexExists) {
-    println "Vertex-centric index 'friendship_status_index' does not exist. Creating new index..."
-
-    mgmt.buildEdgeIndex(friendship, 'friendship_status_index', Direction.BOTH, Order.asc, status)
-    mgmt.commit()
-
-    println "Waiting for vertex-centric index 'friendship_status_index' to become available..."
-    ManagementSystem.awaitRelationIndexStatus(graph, 'friendship_status_index', 'friendship').status(SchemaStatus.ENABLED).call()
-
-    println "Reindexing existing data for vertex-centric index 'friendship_status_index'..."
-    mgmt = graph.openManagement()
-    mgmt.updateIndex(mgmt.getRelationIndex(friendship, 'friendship_status_index'), SchemaAction.REINDEX).get()
-    mgmt.commit()
-} else {
-    println "Vertex-centric index 'friendship_status_index' already exists. Skipping creation..."
-}
-
-println "Index creation and reindexing completed successfully!"]
-	at org.apache.tinkerpop.gremlin.driver.Handler$GremlinResponseHandler.channelRead0(Handler.java:246)
-	at org.apache.tinkerpop.gremlin.driver.Handler$GremlinResponseHandler.channelRead0(Handler.java:201)
-	at io.netty.channel.SimpleChannelInboundHandler.channelRead(SimpleChannelInboundHandler.java:99)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at org.apache.tinkerpop.gremlin.driver.Handler$GremlinSaslAuthenticationHandler.channelRead0(Handler.java:127)
-	at org.apache.tinkerpop.gremlin.driver.Handler$GremlinSaslAuthenticationHandler.channelRead0(Handler.java:69)
-	at io.netty.channel.SimpleChannelInboundHandler.channelRead(SimpleChannelInboundHandler.java:99)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.channel.ChannelInboundHandlerAdapter.channelRead(ChannelInboundHandlerAdapter.java:93)
-	at io.netty.handler.codec.http.websocketx.Utf8FrameValidator.channelRead(Utf8FrameValidator.java:89)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.handler.timeout.IdleStateHandler.channelRead(IdleStateHandler.java:286)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:442)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:103)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:346)
-	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:318)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
-	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1410)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
-	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
-	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:919)
-	at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
-	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:788)
-	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at java.base/java.lang.Thread.run(Thread.java:829)
 The actions of the workload are as following:
 ListFriendsAction=1.0
 Create fragments in workload init phase
@@ -198,8 +33,9 @@ ClusterId0, 1000
 ZipfianMean=0.27 Usercount=1000 numMaxClusters=1; 20.0% of members have, 0.5945667080528851, initial probability.
 ZipfianMean=0.27 Usercount=1000 numMaxClusters=1; 20.0% of members have, 0.5945667080528868 clustering(new)probability.
 Time to create fragments : 5 msec
+ (might take a few minutes for large data sets)
 
-After init: Mon Jun 09 21:05:05 UTC 2025
+After init: Tue Jun 10 06:05:55 UTC 2025
 Connected
 Starting benchmark.
 status:true
@@ -213,7 +49,7 @@ Waiting for threads to finish...
  30 sec: 0 actions;  30 sec: 0 operations; 
  40 sec: 0 actions;  40 sec: 0 operations; 
  50 sec: 0 actions;  50 sec: 0 operations; 
-Maximum time elapsed. Requesting stop for the workload.1
+Maximum time elapsed. Requesting stop for the workload.10
 Stop request is set to :true
 java.net.SocketException: Socket closed
 Closing Visualization thread socket
