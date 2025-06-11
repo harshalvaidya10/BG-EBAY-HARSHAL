@@ -20,7 +20,7 @@ Loading workload...
 SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
 SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-Jun 10, 2025 8:41:48 PM org.yaml.snakeyaml.internal.Logger warn
+Jun 11, 2025 3:16:48 AM org.yaml.snakeyaml.internal.Logger warn
 WARNING: Failed to find field for org.apache.tinkerpop.gremlin.driver.Settings.serializers
 The actions of the workload are as following:
 ListFriendsAction=1.0
@@ -32,15 +32,15 @@ Done creating clusters.
 ClusterId0, 1000
 ZipfianMean=0.27 Usercount=1000 numMaxClusters=1; 20.0% of members have, 0.5945667080528851, initial probability.
 ZipfianMean=0.27 Usercount=1000 numMaxClusters=1; 20.0% of members have, 0.5945667080528868 clustering(new)probability.
-Time to create fragments : 5 msec
+Time to create fragments : 6 msec
  (might take a few minutes for large data sets)
 
-After init: Tue Jun 10 20:41:50 UTC 2025
+After init: Wed Jun 11 03:16:50 UTC 2025
 Connected
 Starting benchmark.
 status:true
- 0 sec: 0 actions;  0 sec: 0 operations; 
-Server started on port: 6001
+ 0 sec: 0 actions; Server started on port: 6001
+ 0 sec: 0 operations; 
 Visualizer Port: 6001
 Maximum execution time specified as: 60 secs
 Waiting for threads to finish...
