@@ -1658,6 +1658,8 @@ public class CoreWorkload extends Workload
 			return key;
 		}
 
+		System.out.println("buildKeyName returning key: " + key + " for actionType: " + actionType + ", distribution: " + requestdistrib);
+
 	}
 
 
@@ -5259,6 +5261,8 @@ public class CoreWorkload extends Workload
 
 
 		}
+
+		System.out.println("doActionGetFriends: keyname=" + keyname + ", profilekeyname=" + profilekeyname);
 	}
 
 	public int doActionGetPendingsDelegate(DB db, int threadid, StringBuilder updateLog,StringBuilder readLog, int seqID, boolean insertImage, boolean warmup) throws IOException
