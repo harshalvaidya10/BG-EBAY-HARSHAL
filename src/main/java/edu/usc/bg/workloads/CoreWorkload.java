@@ -5453,10 +5453,10 @@ public class CoreWorkload extends Workload {
 		int keyname = buildKeyName(usercount);
 		if (lockReads)
 			keyname = activateUser(keyname);
-		if (keyname == -1){}
+		if (keyname == -1){
 			System.out.println("DEBUG: activateUser returned -1, user could not be activated.");
 			return 0;
-			}
+		}
 		// incrUserRef(keyname);
 		int profilekeyname = buildKeyName(usercount);
 		Vector<HashMap<String, ByteIterator>> fResult = new Vector<HashMap<String, ByteIterator>>();
