@@ -65,19 +65,12 @@ public class FriendshipWorkload extends Workload {
 
 	// Initialize all of the threads with the same configuration.
 	public void init(Properties p, Vector<Integer> members) throws WorkloadException {
-		System.out.println(">>>> FriendshipWorkload: init() called");
 
 		userCount = Integer.parseInt(p.getProperty(Client.USER_COUNT_PROPERTY));
 		avgFriendCount = Integer.parseInt(p.getProperty(Client.FRIENDSHIP_COUNT_PROPERTY));
 		friendPercentage = Float.parseFloat(p.getProperty(Client.CONFPERC_COUNT_PROPERTY));
 		recordCount = userCount * avgFriendCount; // Friendship number.
 		feedLoad = Boolean.parseBoolean(p.getProperty(Client.FEED_LOAD_PROPERTY, Client.FEED_LOAD_DEFAULT_PROPERTY));
-
-		System.out.println("FriendshipWorkload init: userCount=" + userCount +
-    ", avgFriendCount=" + avgFriendCount +
-    ", friendPercentage=" + friendPercentage +
-    ", recordCount=" + recordCount +
-    ", feedLoad=" + feedLoad);
 
 		flags = new int[userCount];
 		_members = members;
@@ -111,7 +104,6 @@ public class FriendshipWorkload extends Workload {
 
 	private void addFriends(DB db, int dbKey, int keyNum) {
 		int res = db.CreateFriendship(dbKey, keyNum);
-		System.out.println(">>> DEBUG: Called CreateFriendship for " + dbKey + " -> " + keyNum);
 
 		if (res < 0) {
 			System.out.println("The creation of the friendship relationship failed.");
@@ -127,7 +119,6 @@ public class FriendshipWorkload extends Workload {
 
 	@Override
 	public boolean doInsert(DB db, Object threadState) {
-		System.out.println(">>>> FriendshipWorkload: doInsert() called");
 
 		int dbKey = -1;
 		int dbIdx = -1;

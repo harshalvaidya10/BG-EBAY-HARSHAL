@@ -953,7 +953,6 @@ public class CoreWorkload extends Workload {
 
 	@Override
 	public boolean resetDBInternalStructures(Properties p, int executionMode) {
-		System.out.println("CoreWorkload resetDBInternalStructures called");
 		if (executionMode == BGMainClass.REPEATED && userRelations != null) {
 			initStats = new HashMap<String, Integer>();
 			for (int o = 0; o < acceptedFrnds.length; o++) {
@@ -980,7 +979,6 @@ public class CoreWorkload extends Workload {
 
 			System.out.println("Internal structures are set up");
 
-			System.out.println("Exiting CoreWorkload resetDBInternalStructures method");
 			return true;
 		}
 
@@ -1426,7 +1424,6 @@ public class CoreWorkload extends Workload {
 			int seqID, HashMap<String, Integer> resUpdateOperations, HashMap<String, Integer> friendshipInfo,
 			HashMap<String, Integer> pendingInfo, int thinkTime, boolean insertImage, boolean warmup) {
 		String op = operationchooser.nextString();
-		System.out.println("DEBUG: doTransaction selected operation: " + op);
 		int opsDone = 0;
 		try {
 
@@ -3216,9 +3213,6 @@ public class CoreWorkload extends Workload {
 
 	public int doActionGetFriendsRetain(DB db, int threadid, StringBuilder updateLog, StringBuilder readLog, int seqID,
 			boolean insertImage, boolean warmup) throws IOException {
-		
-		System.out.println("doActionGetFriends called for thread " + threadid);
-
 		String actionType = "GetFriends";
 		int numOpsDone = 0;
 		SocketIO socReq = null;
@@ -5446,17 +5440,13 @@ public class CoreWorkload extends Workload {
 
 	public int doActionGetFriends(DB db, int threadid, StringBuilder updateLog, StringBuilder readLog, int seqID,
 			boolean insertImage, boolean warmup) {
-
-		System.out.println("DEBUG: doActionGetFriends called, threadid=" + threadid + ", seqID=" + seqID);
 		String actionType = "GetFriends";
 		int numOpsDone = 0;
 		int keyname = buildKeyName(usercount);
 		if (lockReads)
 			keyname = activateUser(keyname);
-		if (keyname == -1){
-			System.out.println("DEBUG: activateUser returned -1, user could not be activated.");
+		if (keyname == -1)
 			return 0;
-		}
 		// incrUserRef(keyname);
 		int profilekeyname = buildKeyName(usercount);
 		Vector<HashMap<String, ByteIterator>> fResult = new Vector<HashMap<String, ByteIterator>>();
@@ -5477,7 +5467,6 @@ public class CoreWorkload extends Workload {
 			deactivateUser(keyname);
 
 		System.out.println("doActionGetFriends: keyname=" + keyname + ", profilekeyname=" + profilekeyname);
-		System.out.println("DEBUG: doActionGetFriends completed, numOpsDone=" + numOpsDone);
 
 		return numOpsDone;
 	}
