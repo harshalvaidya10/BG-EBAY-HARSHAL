@@ -1426,6 +1426,7 @@ public class CoreWorkload extends Workload {
 			int seqID, HashMap<String, Integer> resUpdateOperations, HashMap<String, Integer> friendshipInfo,
 			HashMap<String, Integer> pendingInfo, int thinkTime, boolean insertImage, boolean warmup) {
 		String op = operationchooser.nextString();
+		System.out.println("DEBUG: doTransaction selected operation: " + op);
 		int opsDone = 0;
 		try {
 
@@ -3215,6 +3216,9 @@ public class CoreWorkload extends Workload {
 
 	public int doActionGetFriendsRetain(DB db, int threadid, StringBuilder updateLog, StringBuilder readLog, int seqID,
 			boolean insertImage, boolean warmup) throws IOException {
+		
+		System.out.println("doActionGetFriends called for thread " + threadid);
+
 		String actionType = "GetFriends";
 		int numOpsDone = 0;
 		SocketIO socReq = null;
@@ -5442,12 +5446,15 @@ public class CoreWorkload extends Workload {
 
 	public int doActionGetFriends(DB db, int threadid, StringBuilder updateLog, StringBuilder readLog, int seqID,
 			boolean insertImage, boolean warmup) {
+
+		System.out.println("DEBUG: doActionGetFriends called, threadid=" + threadid + ", seqID=" + seqID);
 		String actionType = "GetFriends";
 		int numOpsDone = 0;
 		int keyname = buildKeyName(usercount);
 		if (lockReads)
 			keyname = activateUser(keyname);
 		if (keyname == -1)
+			System.out.println("DEBUG: activateUser returned -1, user could not be activated.");
 			return 0;
 		// incrUserRef(keyname);
 		int profilekeyname = buildKeyName(usercount);
@@ -5469,6 +5476,7 @@ public class CoreWorkload extends Workload {
 			deactivateUser(keyname);
 
 		System.out.println("doActionGetFriends: keyname=" + keyname + ", profilekeyname=" + profilekeyname);
+		System.out.println("DEBUG: doActionGetFriends completed, numOpsDone=" + numOpsDone);
 
 		return numOpsDone;
 	}
