@@ -29,11 +29,16 @@ import edu.usc.bg.server.RequestHandler;
 import edu.usc.bg.validator.ValidationMainClass;
 import edu.usc.bg.workloads.CoreWorkload;
 import edu.usc.bg.workloads.loadActiveThread;
-import main.java.edu.usc.bg.BGMainClass;
-import main.java.edu.usc.bg.Distribution;
-import main.java.edu.usc.bg.KillThread;
-import main.java.edu.usc.bg.MonitoringThread;
-import main.java.edu.usc.bg.Worker;
+// import main.java.edu.usc.bg.BGMainClass;
+// import main.java.edu.usc.bg.Distribution;
+// import main.java.edu.usc.bg.KillThread;
+// import main.java.edu.usc.bg.MonitoringThread;
+// import main.java.edu.usc.bg.Worker;
+import edu.usc.bg.BGMainClass;
+import edu.usc.bg.Distribution;
+import edu.usc.bg.KillThread;
+import edu.usc.bg.MonitoringThread;
+import edu.usc.bg.Worker;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -2148,10 +2153,6 @@ public class Client {
 							", maxExecutionTime=" + maxExecutionTime +
 							", simWarmupTime=" + simWarmupTime +
 							", distriType=" + distriType);
-
-			Distribution distriThread = new Distribution(db, dotransactions, workload, 1, 1, props, opcount,
-					targetperthreadperms,
-					false, lambda, maxExecutionTime, simWarmupTime, distriType);
 
 			Distribution distriThread = new Distribution(db, dotransactions, workload, 1, 1, props, opcount,
 					targetperthreadperms,
