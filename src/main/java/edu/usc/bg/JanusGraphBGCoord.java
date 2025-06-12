@@ -552,44 +552,7 @@ public class JanusGraphBGCoord {
         System.out.println("Entering startBGMainClass method with threads: " + threads
                 + ", maxExeTime: " + maxExeTime + ", workload: " + workload + ", clientIP: " + clientIP);
         List<String> commands = new ArrayList<>();
-        commands.add("java");
-        commands.add("-Xms18000m"); // Initial heap size ~14GB
-        commands.add("-Xmx18000m"); // Maximum heap size ~14GB
-        // commands.add("-XX:ActiveProcessorCount=30");
-        commands.add("-XX:+UnlockExperimentalVMOptions"); // Needed for some subsequent options
-        commands.add("-XX:+UseG1GC"); // Use G1 Garbage Collector
-        commands.add("-XX:MaxGCPauseMillis=75"); // Target max GC pause
-        commands.add("-XX:ParallelGCThreads=15"); // Parallel GC threads (Note: See comment below)
-        commands.add("-XX:ConcGCThreads=10"); // Concurrent GC threads (Note: See comment below)
-        commands.add("-XX:G1NewSizePercent=10"); // G1 Young Gen initial size
-        commands.add("-XX:G1MaxNewSizePercent=30"); // G1 Young Gen max size
-        commands.add("-XX:ActiveProcessorCount=14");
-        commands.add("-Dlogback.configurationFile=/work/conf/logback.xml");
-
-        commands.add("-cp");
-        commands.add("target/classes:target/lib/*");
-        commands.add("edu.usc.bg.BGMainClass");
-
-        commands.add("onetime");
-        commands.add("-t");
-        commands.add("edu.usc.bg.workloads.CoreWorkLoad");
-        commands.add("-threads");
-        commands.add(String.valueOf(threads));
-        commands.add("-db");
-        commands.add("JanusGraph.src.janusgraph.JanusGraphClient");
-        commands.add("-janusGraphIp");
-        // commands.add("1.1.1.1");
-        commands.add("10.10.1.2");
-        commands.add("-P");
-        commands.add(workload);
-        commands.add("-doCache");
-        commands.add(String.valueOf(doCache));
-        commands.add("-latency");
-        commands.add(String.valueOf(latency));
-        commands.add("-maxexecutiontime");
-        commands.add(String.valueOf(maxExeTime));
-        commands.add("-s");
-        commands.add("true");
+        // ...existing code to build commands...
 
         boolean localExecution = (clientIP == null || clientIP.isEmpty() ||
                 clientIP.equalsIgnoreCase("localhost") ||
@@ -614,11 +577,12 @@ public class JanusGraphBGCoord {
                 e.printStackTrace();
                 throw e; // Re-throw to allow calling method to handle
             }
-
         }
-        // SSH connect to client IP, return pb.
-        System.out.println(
-                "Exiting startBGMainClass method, starting process with commands: " + String.join(" ", commands));
+        // Remove the unreachable statement below:
+        // System.out.println("Exiting startBGMainClass method, starting process with
+        // commands: " + String.join(" ", commands));
+        // Add a throw to satisfy the compiler (should never be reached):
+        // throw new IllegalStateException("Should not reach here");
     }
 
     private void loadDBFDBManner() {
