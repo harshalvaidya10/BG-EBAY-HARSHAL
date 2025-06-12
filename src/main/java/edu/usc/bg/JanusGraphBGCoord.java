@@ -60,15 +60,24 @@ public class JanusGraphBGCoord {
     }
 
     public boolean ifWriteWorkload() {
+        System.out.print("Entering ifWriteWorkload method");
         float acceptFriendReqAction = Float.parseFloat(coreProps.getProperty("AcceptFriendReqAction"));
         float rejectFriendReqAction = Float.parseFloat(coreProps.getProperty("RejectFriendReqAction"));
         float thawFriendshipAction = Float.parseFloat(coreProps.getProperty("ThawFriendshipAction"));
         float inviteFriendAction = Float.parseFloat(coreProps.getProperty("InviteFriendAction"));
+
+        System.out.println("acceptFriendReqAction = " + acceptFriendReqAction);
+        System.out.println("rejectFriendReqAction = " + rejectFriendReqAction);
+        System.out.println("thawFriendshipAction = " + thawFriendshipAction);
+        System.out.println("inviteFriendAction = " + inviteFriendAction);
+
+        System.out.println("Exiting ifWriteWorkload method");
         return acceptFriendReqAction > 0 || rejectFriendReqAction > 0 || thawFriendshipAction > 0
                 || inviteFriendAction > 0;
     }
 
     public static void main(String[] args) throws Exception {
+        System.out.println("Entering main method of JanusGraphBGCoord");
         JanusGraphBGCoord coord = new JanusGraphBGCoord();
         coord.readCmdArgs(args);
         try (FileInputStream fis = new FileInputStream(coord.populateWorkload)) {
@@ -128,6 +137,7 @@ public class JanusGraphBGCoord {
             int res = coord.runBinarySearch();
             System.out.println("Result: " + res);
         } else if (coord.objective.equals("soar")) {
+            System.out.println("Objective is soar, starting findMaxThroughput with minimum threads: " + coord.minimum);
             int res = coord.findMaxThroughput(coord.minimum);
             System.out.println("Result: " + res);
         } else {
@@ -138,6 +148,7 @@ public class JanusGraphBGCoord {
     }
 
     private Stat probe(int threads, int run) {
+        System.out.println("Entering probe method with threads: " + threads + ", iteration count: " + run);
         try {
             double tp = measureThroughput(threads, run);
             boolean sla = checkSLA(run);
@@ -149,6 +160,7 @@ public class JanusGraphBGCoord {
     }
 
     public int findMaxThroughput(int startThreads) throws Exception {
+        System.out.println("Entering findMaxThroughput method with startThreads: " + startThreads);
         final int MAX_THREADS = 65_536; // 保护上限
         int runs = 0; // 实验轮计数
 
@@ -203,6 +215,8 @@ public class JanusGraphBGCoord {
     }
 
     public double measureThroughput(int threadcount, int count) throws Exception {
+        System.out.println("Entering measureThroughput method with threadcount: " + threadcount
+                + ", iteration number for experiment: " + count);
         if (doMonitor) {
             String startMark = String.format("=== START TEST iteration=%d, threadCount=%d ===", count, threadcount);
         }
@@ -342,6 +356,7 @@ public class JanusGraphBGCoord {
     }
 
     public void warmUp(int count) throws IOException {
+        System.out.println("Entering warmUp method with iterations: " + count);
         int userCount;
         int friendCount;
         int maxExeTime = 0;
@@ -392,6 +407,7 @@ public class JanusGraphBGCoord {
                 "mainclass");
 
         saveToFile(directory + "/BGMainClass-warmup" + count + ".log", bgLog);
+        System.out.println("Exiting warmUp method");
 
     }
 
@@ -458,11 +474,15 @@ public class JanusGraphBGCoord {
     public void startClient(int threads, int count) throws Exception {
         // run pipeline, clear logfiles -> clear DB -> loadDB -> issue queries ->
         // validation(optional)
+        System.out.println("Entering startClient method with threads: " + threads
+                + ", iteration number for experiment : " + count);
         clearLogFiles();
         System.out.println("files cleared");
         if (isWrite) {
+            System.out.println("isWrite workload entered");
             // if it's write workload, do load and warmup each time
             if (doLoad) {
+                System.out.println("doLoad is true, loading DB");
                 clearDBFDBManner();
                 Process loadProcess = loadDB();
 
@@ -471,9 +491,11 @@ public class JanusGraphBGCoord {
                         "mainclass");
 
                 saveToFile(directory + "/BGMainLoad-" + count + ".log", bgLoadLog);
+                System.out.println("DB loaded, log saved to: " + directory + "/BGMainLoad-" + count + ".log");
             }
 
             if (doWarmup) {
+                System.out.println("doWarmup is true, warming up DB");
                 warmUp(count);
             }
         }
@@ -523,9 +545,12 @@ public class JanusGraphBGCoord {
         // "mainclass");
 
         // saveToFile(directory+"/BGMainClass-" + count +".log", bgLog);
+        System.out.println("Exiting startClient method, all clients started and logs saved.");
     }
 
     private Process startBGMainClass(int threads, int maxExeTime, String workload, String clientIP) throws IOException {
+        System.out.println("Entering startBGMainClass method with threads: " + threads
+                + ", maxExeTime: " + maxExeTime + ", workload: " + workload + ", clientIP: " + clientIP);
         List<String> commands = new ArrayList<>();
         commands.add("java");
         commands.add("-Xms18000m"); // Initial heap size ~14GB
@@ -569,6 +594,7 @@ public class JanusGraphBGCoord {
         boolean localExecution = (clientIP == null || clientIP.isEmpty() ||
                 clientIP.equalsIgnoreCase("localhost") ||
                 clientIP.equals("127.0.0.1"));
+        System.out.println("localExecution: " + localExecution);
         if (localExecution) {
             System.out.println("Executing BGMainClass locally: " + String.join(" ", commands));
             ProcessBuilder pb = new ProcessBuilder(commands);
@@ -591,7 +617,8 @@ public class JanusGraphBGCoord {
 
         }
         // SSH connect to client IP, return pb.
-
+        System.out.println(
+                "Exiting startBGMainClass method, starting process with commands: " + String.join(" ", commands));
     }
 
     private void loadDBFDBManner() {
@@ -599,6 +626,7 @@ public class JanusGraphBGCoord {
     }
 
     private Process loadDB() throws IOException {
+        System.out.println("Entering loadDB method");
         List<String> commands = new ArrayList<>();
         commands.add("java");
         commands.add("-Xms18000m"); // Initial heap size ~14GB
@@ -643,19 +671,22 @@ public class JanusGraphBGCoord {
 
         ProcessBuilder pb = new ProcessBuilder(commands);
         pb.redirectErrorStream(true);
-
+        System.out.println("Exiting loadDB method, starting process with commands: " + String.join(" ", commands));
         return pb.start();
     }
 
     private void saveToFile(String fileName, String content) {
+        System.out.println("Entering saveToFile method with fileName: " + fileName);
         try (PrintWriter pw = new PrintWriter(new FileWriter(fileName))) {
             pw.print(content);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Exiting saveToFile method, content saved to: " + fileName);
     }
 
     private String watchProcessOutput(Process process, String keywords, String threadName) throws IOException {
+        System.out.println("Entering watchProcessOutput method");
         StringBuilder sb = new StringBuilder();
 
         Pattern numericPattern = Pattern.compile("^\\d+\\s*,\\s*\\d+$", Pattern.MULTILINE);
@@ -689,11 +720,12 @@ public class JanusGraphBGCoord {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
+        System.out.println("Exiting watchProcessOutput method");
         return sb.toString();
     }
 
     private void clearLogFiles() {
+        System.out.println("Entering clearLogFiles method");
         String directory = "./";
         File dir = new File(directory);
         if (!dir.exists() || !dir.isDirectory()) {
@@ -716,6 +748,7 @@ public class JanusGraphBGCoord {
                 }
             }
         }
+        System.out.println("Exiting clearLogFiles method");
     }
 
     public void clearDB() {
@@ -773,6 +806,8 @@ public class JanusGraphBGCoord {
     }
 
     public void clearDBFDBManner() {
+        System.out.println("Entering clearDBFDBManner method");
+        System.out.println("Exiting clearDBFDBManner method");
     }
 
     public void readCmdArgs(String[] args) {
@@ -789,11 +824,13 @@ public class JanusGraphBGCoord {
          * means rate socialites
          * -validation: true or false, do validation or not
          */
+        System.out.println("Reading command line arguments using readCmdArgs method");
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "-doLoad":
                     if (i + 1 < args.length) {
                         doLoad = Boolean.parseBoolean(args[++i]);
+                        System.out.println("doLoad set to: " + doLoad);
                     } else {
                         System.err.println("Missing value for -doLoad");
                         System.exit(1);
@@ -802,6 +839,7 @@ public class JanusGraphBGCoord {
                 case "-janusGraphIp":
                     if (i + 1 < args.length) {
                         janusGraphIp = args[++i];
+                        System.out.println("janusGraphIp set to: " + janusGraphIp);
                     } else {
                         System.err.println("Missing value for -doLoad");
                         System.exit(1);
@@ -810,6 +848,7 @@ public class JanusGraphBGCoord {
                 case "-doMonitor":
                     if (i + 1 < args.length) {
                         doMonitor = Boolean.parseBoolean(args[++i]);
+                        System.out.println("doMonitor set to: " + doMonitor);
                     } else {
                         System.err.println("Missing value for -doLoad");
                         System.exit(1);
@@ -826,6 +865,7 @@ public class JanusGraphBGCoord {
                 case "-doWarmup":
                     if (i + 1 < args.length) {
                         doWarmup = Boolean.parseBoolean(args[++i]);
+                        System.out.println("doWarmup set to: " + doWarmup);
                     } else {
                         System.err.println("Missing value for -doWarmup");
                         System.exit(1);
@@ -834,6 +874,7 @@ public class JanusGraphBGCoord {
                 case "-workload":
                     if (i + 1 < args.length) {
                         workload = args[++i];
+                        System.out.println("workload set to: " + workload);
                     } else {
                         System.err.println("Missing value for -workload");
                         System.exit(1);
@@ -842,6 +883,7 @@ public class JanusGraphBGCoord {
                 case "-populateWorkload":
                     if (i + 1 < args.length) {
                         populateWorkload = args[++i];
+                        System.out.println("populateWorkload set to: " + populateWorkload);
                     } else {
                         System.err.println("Missing value for -populateWorkload");
                         System.exit(1);
@@ -850,6 +892,7 @@ public class JanusGraphBGCoord {
                 case "-latency":
                     if (i + 1 < args.length) {
                         latency = Double.parseDouble(args[++i]);
+                        System.out.println("latency set to: " + latency);
                     } else {
                         System.err.println("Missing value for -latency");
                         System.exit(1);
@@ -858,6 +901,7 @@ public class JanusGraphBGCoord {
                 case "-perc":
                     if (i + 1 < args.length) {
                         perc = Double.parseDouble(args[++i]);
+                        System.out.println("perc set to: " + perc);
                     } else {
                         System.err.println("Missing value for -perc");
                         System.exit(1);
@@ -866,6 +910,7 @@ public class JanusGraphBGCoord {
                 case "-staleness":
                     if (i + 1 < args.length) {
                         staleness = Double.parseDouble(args[++i]);
+                        System.out.println("staleness set to: " + staleness);
                     } else {
                         System.err.println("Missing value for -staleness");
                         System.exit(1);
@@ -874,6 +919,7 @@ public class JanusGraphBGCoord {
                 case "-duration":
                     if (i + 1 < args.length) {
                         duration = Integer.parseInt(args[++i]);
+                        System.out.println("duration set to: " + duration);
                     } else {
                         System.err.println("Missing value for -duration");
                         System.exit(1);
@@ -882,6 +928,7 @@ public class JanusGraphBGCoord {
                 case "-directory":
                     if (i + 1 < args.length) {
                         directory = args[++i];
+                        System.out.println("directory set to: " + directory + " for logs");
                     } else {
                         System.err.println("Missing value for -directory");
                         System.exit(1);
@@ -890,6 +937,7 @@ public class JanusGraphBGCoord {
                 case "-minimum":
                     if (i + 1 < args.length) {
                         minimum = Integer.parseInt(args[++i]);
+                        System.out.println("minimum number of threads set to: " + minimum);
                     } else {
                         System.err.println("Missing value for -minimum");
                         System.exit(1);
@@ -898,6 +946,7 @@ public class JanusGraphBGCoord {
                 case "-objective":
                     if (i + 1 < args.length) {
                         objective = args[++i].toLowerCase();
+                        System.out.println("objective set to: " + objective);
                         if (!objective.equals("soar") && !objective.equals("socialites")) {
                             System.err.println("Invalid value for -objective. Must be 'soar' or 'socialites'.");
                             System.exit(1);
@@ -910,6 +959,7 @@ public class JanusGraphBGCoord {
                 case "-validation":
                     if (i + 1 < args.length) {
                         String val = args[++i].toLowerCase();
+                        System.out.println("validation set to: " + val);
                         if (!val.equals("true") && !val.equals("false")) {
                             System.err.println("Invalid value for -validation. Must be 'true' or 'false'.");
                             System.exit(1);
@@ -923,7 +973,11 @@ public class JanusGraphBGCoord {
                 default:
                     System.err.println("Unknown argument: " + args[i]);
                     break;
+
             }
         }
+
+        System.out.println("exiting readCmdArgs method");
+
     }
 }

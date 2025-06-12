@@ -65,11 +65,20 @@ public class FriendshipWorkload extends Workload {
 
 	// Initialize all of the threads with the same configuration.
 	public void init(Properties p, Vector<Integer> members) throws WorkloadException {
+		System.out.println(">>>> FriendshipWorkload: init() called");
+
 		userCount = Integer.parseInt(p.getProperty(Client.USER_COUNT_PROPERTY));
 		avgFriendCount = Integer.parseInt(p.getProperty(Client.FRIENDSHIP_COUNT_PROPERTY));
 		friendPercentage = Float.parseFloat(p.getProperty(Client.CONFPERC_COUNT_PROPERTY));
 		recordCount = userCount * avgFriendCount; // Friendship number.
 		feedLoad = Boolean.parseBoolean(p.getProperty(Client.FEED_LOAD_PROPERTY, Client.FEED_LOAD_DEFAULT_PROPERTY));
+
+		System.out.println("FriendshipWorkload init: userCount=" + userCount +
+    ", avgFriendCount=" + avgFriendCount +
+    ", friendPercentage=" + friendPercentage +
+    ", recordCount=" + recordCount +
+    ", feedLoad=" + feedLoad);
+
 		flags = new int[userCount];
 		_members = members;
 		for (int i = 0; i < userCount; i++)

@@ -273,6 +273,7 @@ public class MyMeasurement
 	}
 
 	public static void resetMeasurement(){
+		System.out.println("Entering resetMeasurement method of MyMeasurement");
 		allMeasurements = new Vector<MyMeasurement>();
 		//delete the files created so far
 		for(int i=0; i<allMeasurements.size(); i++){
@@ -283,6 +284,8 @@ public class MyMeasurement
 				System.exit(0);
 			}
 		}
+
+		System.out.println("Exiting resetMeasurement method of MyMeasurement");
 	}
 	
 }

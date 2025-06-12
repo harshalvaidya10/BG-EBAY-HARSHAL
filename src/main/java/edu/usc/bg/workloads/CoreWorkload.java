@@ -546,6 +546,7 @@ public class CoreWorkload extends Workload {
 	 * Called once, in the main client thread, before any operations are started.
 	 */
 	public void init(Properties p, Vector<Integer> members) throws WorkloadException {
+		System.out.println("CoreWorkload init called");
 		lockReads = Boolean.parseBoolean(p.getProperty(LOCK_READS_PROPERTY, Boolean.toString(lockReads)));
 		enableLogging = Boolean.parseBoolean(p.getProperty(ENABLE_LOGGING_PROPERTY, Boolean.toString(enableLogging)));
 		initOptionChooser(p);
@@ -664,6 +665,8 @@ public class CoreWorkload extends Workload {
 		}
 		System.out.println("Time to create fragments : " + (System.currentTimeMillis() - loadst) + " msec");
 		createInternalDSFragments();
+
+		System.out.println("Exiting CoreWorkload init");
 
 	}
 
@@ -950,6 +953,7 @@ public class CoreWorkload extends Workload {
 
 	@Override
 	public boolean resetDBInternalStructures(Properties p, int executionMode) {
+		System.out.println("CoreWorkload resetDBInternalStructures called");
 		if (executionMode == BGMainClass.REPEATED && userRelations != null) {
 			initStats = new HashMap<String, Integer>();
 			for (int o = 0; o < acceptedFrnds.length; o++) {
@@ -975,6 +979,8 @@ public class CoreWorkload extends Workload {
 			}
 
 			System.out.println("Internal structures are set up");
+
+			System.out.println("Exiting CoreWorkload resetDBInternalStructures method");
 			return true;
 		}
 

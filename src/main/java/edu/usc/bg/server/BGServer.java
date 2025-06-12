@@ -115,7 +115,7 @@ public class BGServer extends Thread {
 	public BGServer(int clientId, int noclients, int nomembers, int nothreads,
 			ConcurrentHashMap<Integer, ClientInfo> hm, int d, int numSoc) {
 		// main constructor
-		
+
 		duration = d;
 		NumOfThreads = nothreads;
 		// NumShutdownReqs=0;
@@ -222,6 +222,7 @@ public class BGServer extends Thread {
 	}
 
 	public static void initializeWorkers(String dbname, Properties properties) {
+		System.out.println("Entering initializeWorkers method in BGServer.java");
 		// System.out.println("Registering db instance into workers");
 		String value = properties.getProperty(Client.INSERT_IMAGE_PROPERTY);
 		boolean insertImage = false;
@@ -250,6 +251,8 @@ public class BGServer extends Thread {
 		} catch (Exception e) {
 			e.printStackTrace(System.out);
 		}
+
+		System.out.println("Exiting initializeWorkers method in BGServer.java");
 
 	}
 
@@ -407,7 +410,8 @@ public class BGServer extends Thread {
 							+ " sockets with client " + j);
 					if (p1.availPool.size() != BGServer.NumSocketsWorkload) {
 						System.out
-								.println("Error: The number of generated sockets is not equal the specified number. Exiting ...");
+								.println(
+										"Error: The number of generated sockets is not equal the specified number. Exiting ...");
 						System.exit(1);
 					}
 					// if (BGServer.NumSocketsWorkers!=0)
@@ -467,7 +471,7 @@ public class BGServer extends Thread {
 		Socket socket = null;
 		try {
 			if (NumOfClients > 1) {
-				boolean flag=false;
+				boolean flag = false;
 				while (true) {
 					try {
 
@@ -481,19 +485,18 @@ public class BGServer extends Thread {
 					} catch (Exception e) {
 						System.out.println("Error in Server port "
 								+ e.getMessage());
-						if (flag){
-						killBindingProcesses(CLIENT_CONNECT_PORT);
+						if (flag) {
+							killBindingProcesses(CLIENT_CONNECT_PORT);
 						}
-						flag=true;
+						flag = true;
 						Thread.sleep(10000);
 
 					}
-				} //while
+				} // while
 
 			}
 			// for (int i=0; i< ((NumOfClients-1)*(NumSocketsTotal+1)); i++)
-			while (BGServer.ServerWorking)
-			{
+			while (BGServer.ServerWorking) {
 				try {
 					// wait for a connection from a client
 					socket = getServerSocket().accept();
@@ -540,8 +543,9 @@ public class BGServer extends Thread {
 	public static int killBindingProcesses(int port) {
 		// TODO Auto-generated method stub
 		String netstat = " netstat -ano";
-		int numKilled=0;
-		String mypid=ManagementFactory.getRuntimeMXBean().getName().substring(0,ManagementFactory.getRuntimeMXBean().getName().indexOf('@'));
+		int numKilled = 0;
+		String mypid = ManagementFactory.getRuntimeMXBean().getName().substring(0,
+				ManagementFactory.getRuntimeMXBean().getName().indexOf('@'));
 		Process p = null;
 		try {
 			p = Runtime.getRuntime().exec(netstat);
@@ -553,29 +557,28 @@ public class BGServer extends Thread {
 				p.getInputStream()));
 		String line;
 		try {
-			String pattern= ":" + port;
-			//String pattern1 = "0.0.0.0" + ":" + port;
-			//String pattern2 = Inet4Address.getLocalHost().getHostAddress().toString()+ ":" + port;
+			String pattern = ":" + port;
+			// String pattern1 = "0.0.0.0" + ":" + port;
+			// String pattern2 = Inet4Address.getLocalHost().getHostAddress().toString()+
+			// ":" + port;
 			while ((line = reader.readLine()) != null) {
-				String patternLine=line;
+				String patternLine = line;
 				String[] tokens1 = line.split("    ");
 				if (tokens1.length > 2) {
-					patternLine=tokens1[1];
+					patternLine = tokens1[1];
 				}
-				if (patternLine.contains(pattern) ) {
+				if (patternLine.contains(pattern)) {
 					String[] tokens2 = line.split(" ");
 					String pid = tokens2[tokens2.length - 1];
 					System.out.println("Killing Process:" + pid);
-					if (pid.equals(mypid)){
-						System.out.println("Wrong: trying to kill my proces:"+pid);
-						
-					}
-					else{
-					Process p2 = Runtime.getRuntime().exec("taskkill /F /pid " + pid);
-					numKilled++;
+					if (pid.equals(mypid)) {
+						System.out.println("Wrong: trying to kill my proces:" + pid);
+
+					} else {
+						Process p2 = Runtime.getRuntime().exec("taskkill /F /pid " + pid);
+						numKilled++;
 					}
 				}
-				
 
 			}
 		} catch (Exception e) {
@@ -587,7 +590,8 @@ public class BGServer extends Thread {
 	}
 
 	public static void main(String[] args) {
-		String mypid=ManagementFactory.getRuntimeMXBean().getName().substring(0,ManagementFactory.getRuntimeMXBean().getName().indexOf('@'));
+		String mypid = ManagementFactory.getRuntimeMXBean().getName().substring(0,
+				ManagementFactory.getRuntimeMXBean().getName().indexOf('@'));
 		System.out.println(mypid);
 		String netstat = " netstat -ano";
 		Process p = null;
@@ -606,19 +610,18 @@ public class BGServer extends Thread {
 					.toString()
 					+ ":" + 10001;
 			while ((line = reader.readLine()) != null) {
-				String patternLine=line;
+				String patternLine = line;
 				String[] tokens1 = line.split("    ");
 				if (tokens1.length > 2) {
-					patternLine=tokens1[1];
+					patternLine = tokens1[1];
 				}
 				if (patternLine.contains(pattern1) || patternLine.contains(pattern2)) {
 					String[] tokens2 = line.split(" ");
 					String pid = tokens2[tokens2.length - 1];
 					System.out.println("Killing Process:" + pid);
-				//	Process p2 = Runtime.getRuntime().exec(
-						//	"taskkill /F /pid " + pid);
+					// Process p2 = Runtime.getRuntime().exec(
+					// "taskkill /F /pid " + pid);
 				}
-				
 
 			}
 		} catch (Exception e) {
@@ -636,8 +639,9 @@ public class BGServer extends Thread {
 		try {
 			if (BGServer.NumOfClients > 1) {
 				SocketIO socket = new SocketIO(new Socket(BGServer.ClientInfo
-						.get(BGServer.CLIENT_ID).getIP(), BGServer.ClientInfo
-						.get(BGServer.CLIENT_ID).getPort()));
+						.get(BGServer.CLIENT_ID).getIP(),
+						BGServer.ClientInfo
+								.get(BGServer.CLIENT_ID).getPort()));
 				socket.sendValue(RequestHandler.STOP_HANDLING_REQUEST);
 				socket.closeAll();
 

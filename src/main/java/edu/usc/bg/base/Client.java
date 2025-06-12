@@ -29,6 +29,11 @@ import edu.usc.bg.server.RequestHandler;
 import edu.usc.bg.validator.ValidationMainClass;
 import edu.usc.bg.workloads.CoreWorkload;
 import edu.usc.bg.workloads.loadActiveThread;
+import main.java.edu.usc.bg.BGMainClass;
+import main.java.edu.usc.bg.Distribution;
+import main.java.edu.usc.bg.KillThread;
+import main.java.edu.usc.bg.MonitoringThread;
+import main.java.edu.usc.bg.Worker;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -41,43 +46,42 @@ import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class CustomWarmupThread extends Thread{
+class CustomWarmupThread extends Thread {
 	DB db;
-	int start,end;
+	int start, end;
 	boolean insertImage = false;
-	
+
 	public CustomWarmupThread(DB _db, int i, int j) {
 		// TODO Auto-generated constructor stub
-		db=_db;
-		start=i;
-		end=j;
+		db = _db;
+		start = i;
+		end = j;
 		insertImage = Boolean.parseBoolean(db.getProperties().getProperty("insertimage"));
 	}
-	public void run(){
-		try{
 
-			HashMap<String, ByteIterator> result;//= new HashMap<String, ByteIterator>();
-			Vector<HashMap<String,ByteIterator>> r;//=new Vector<HashMap<String,ByteIterator>>();
+	public void run() {
+		try {
 
-			for (int ii=start; ii>=end;ii--){
-				//System.out.println("i="+ii);
-//				int x=CoreWorkload.myMemberObjs[ii].get_uid();
+			HashMap<String, ByteIterator> result;// = new HashMap<String, ByteIterator>();
+			Vector<HashMap<String, ByteIterator>> r;// =new Vector<HashMap<String,ByteIterator>>();
+
+			for (int ii = start; ii >= end; ii--) {
+				// System.out.println("i="+ii);
+				// int x=CoreWorkload.myMemberObjs[ii].get_uid();
 				int x = ii;
-				//	System.out.println("id="+x);
-				result= new HashMap<String, ByteIterator>();
-
+				// System.out.println("id="+x);
+				result = new HashMap<String, ByteIterator>();
 
 				db.viewProfile(0, x, result, insertImage, false);
-				r=new Vector<HashMap<String,ByteIterator>>();
+				r = new Vector<HashMap<String, ByteIterator>>();
 				db.listFriends(0, x, null, r, insertImage, false);
-				r=new Vector<HashMap<String,ByteIterator>>();
+				r = new Vector<HashMap<String, ByteIterator>>();
 				db.viewFriendReq(x, r, insertImage, false);
-				if (ii%1000==0){
-					System.out.println("Still working"+ii);
+				if (ii % 1000 == 0) {
+					System.out.println("Still working" + ii);
 				}
 			}
-		}
-		catch (Exception ex){
+		} catch (Exception ex) {
 			ex.printStackTrace(System.out);
 			System.exit(0);
 		}
@@ -126,16 +130,15 @@ class FreqComparator implements Comparator<FreqElm> {
 
 /////////////////////////
 class VisualizationThread extends Thread {
-	int          serverPort  ;
+	int serverPort;
 	static ServerSocket serverSocket = null;
-	static boolean      isStopped    = false;
+	static boolean isStopped = false;
 	ExecutorService threadPool = Executors.newFixedThreadPool(100);
 	StatusThread status;
 
-	VisualizationThread( int port,StatusThread t)
-	{
-		status=t;
-		serverPort=port;
+	VisualizationThread(int port, StatusThread t) {
+		status = t;
+		serverPort = port;
 		try {
 			serverSocket = new ServerSocket(serverPort);
 			System.out.println("Server started on port: " + serverPort);
@@ -146,62 +149,60 @@ class VisualizationThread extends Thread {
 		}
 
 	}
-	public static void stopServer()
-	{
-		if(!isStopped)
-		{
+
+	public static void stopServer() {
+		if (!isStopped) {
 			isStopped = true;
 			try {
 				serverSocket.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} 
+			}
 		}
 	}
+
 	public boolean isStopped() {
 		return isStopped;
 	}
 
-	public void run()
-	{
-		while(! status.alldone){
-			//SocketIO 
+	public void run() {
+		while (!status.alldone) {
+			// SocketIO
 			Socket clientSocket = null;
 			try {
-				clientSocket =serverSocket.accept();
+				clientSocket = serverSocket.accept();
 
-				//				clientSocket =new SocketIO(serverSocket.accept());
+				// clientSocket =new SocketIO(serverSocket.accept());
 
-				this.threadPool.execute(new WorkerRunnable(clientSocket,status));
+				this.threadPool.execute(new WorkerRunnable(clientSocket, status));
 			} catch (IOException e) {
 				System.out.println(e);
 				System.out.println("Closing Visualization thread socket");
 			}
 		}
-		//stopServer();
+		// stopServer();
 		this.threadPool.shutdown();
 		System.out.println("Satisfying perc: " + MyMeasurement.getSatisfyingPerc());
-		System.out.println("Visualization thread has Stopped...") ;
+		System.out.println("Visualization thread has Stopped...");
 
 	}
 }
 
-class WorkerRunnable implements Runnable{
+class WorkerRunnable implements Runnable {
 
 	Socket clientSocket = null;
-	StatusThread status   = null;
-	String separator="|";
-	static AtomicInteger numSocilites= new AtomicInteger(Client.threadCount);
-
+	StatusThread status = null;
+	String separator = "|";
+	static AtomicInteger numSocilites = new AtomicInteger(Client.threadCount);
 
 	public WorkerRunnable(Socket clientSocket, StatusThread t) {
 		this.clientSocket = clientSocket;
-		status=t;
+		status = t;
 	}
 
 	public void run() {
-		String msg="";
+		String msg = "";
 		try {
 			InputStream is = clientSocket.getInputStream();
 			OutputStream os = clientSocket.getOutputStream();
@@ -215,105 +216,91 @@ class WorkerRunnable implements Runnable{
 			int bytesRead = 0;
 			while (bytesRead < len) {
 				int result = is.read(receivedBytes, bytesRead, len - bytesRead);
-				if (result == -1) break;
+				if (result == -1)
+					break;
 				bytesRead += result;
 			}
 
 			msg = new String(receivedBytes, 0, len);
-			//InputStream input  = clientSocket.getInputStream();
-			//OutputStream output = clientSocket.getOutputStream();
-			//			
-			//		PrintWriter out=null;
+			// InputStream input = clientSocket.getInputStream();
+			// OutputStream output = clientSocket.getOutputStream();
+			//
+			// PrintWriter out=null;
 
-			//			out = new PrintWriter(clientSocket.getOutputStream(), true);
+			// out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-			//			BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			//			byte buf[]= new byte[300];
-			//			int i=in.read(buf);
-			//			int l=clientSocket.getDataInputStream().read(buf, 0, 4);
-			//			int ll=ByteBuffer.wrap(buf).getInt();
-			//			System.out.println(ll);
-			//			msg=new String(buf,0,i);
-			//			byte[] b=clientSocket.readBytes();
-			//			msg=new String(b);
-			//ByteBuffer.wrap(b).toString();
+			// BufferedReader in = new BufferedReader(new
+			// InputStreamReader(clientSocket.getInputStream()));
+			// byte buf[]= new byte[300];
+			// int i=in.read(buf);
+			// int l=clientSocket.getDataInputStream().read(buf, 0, 4);
+			// int ll=ByteBuffer.wrap(buf).getInt();
+			// System.out.println(ll);
+			// msg=new String(buf,0,i);
+			// byte[] b=clientSocket.readBytes();
+			// msg=new String(b);
+			// ByteBuffer.wrap(b).toString();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		//String arg[] = msg.split(separator);
+		// String arg[] = msg.split(separator);
 
-
-
-		if (msg.contains( "GetData")) 
-		{// MSG_GETDATA 
-			//// Socialites | actions | response time | percentage
-			String summ=status.summary;
+		if (msg.contains("GetData")) {// MSG_GETDATA
+										//// Socialites | actions | response time | percentage
+			String summ = status.summary;
 			int threadcount;
-			double total=0;
-			int index=summ.indexOf('=');
-			int i=0;
-			while (index!=-1)
-			{
+			double total = 0;
+			int index = summ.indexOf('=');
+			int i = 0;
+			while (index != -1) {
 				i++;
-				summ=summ.substring(index+1);
-				double responsetime=0;
-				if (Double.parseDouble(summ.substring(0,summ.indexOf(']')))>0)
-					responsetime=Double.parseDouble(summ.substring(0,summ.indexOf(']')));
-				total=total+responsetime;
-				index=summ.indexOf('=');
+				summ = summ.substring(index + 1);
+				double responsetime = 0;
+				if (Double.parseDouble(summ.substring(0, summ.indexOf(']'))) > 0)
+					responsetime = Double.parseDouble(summ.substring(0, summ.indexOf(']')));
+				total = total + responsetime;
+				index = summ.indexOf('=');
 			}
-			total=total/1000;
-			//if (flag==false)
-			//{
-			//flag=true;
-			//threadcount=1;
-			//}
-			//else
-			//threadcount=Client.threadCount;
+			total = total / 1000;
+			// if (flag==false)
+			// {
+			// flag=true;
+			// threadcount=1;
+			// }
+			// else
+			// threadcount=Client.threadCount;
 
-			if (i==0)
-				i=1;
-			String data="GetData"+separator+ numSocilites.get()+ separator + (int)status.curactthroughput + separator + (int)total/i + separator + (int)MyMeasurement.getSatisfyingPerc();
+			if (i == 0)
+				i = 1;
+			String data = "GetData" + separator + numSocilites.get() + separator + (int) status.curactthroughput
+					+ separator + (int) total / i + separator + (int) MyMeasurement.getSatisfyingPerc();
 			System.out.println("Socialites | actions | response time | percentage");
 			System.out.println(data);
 		}
 
-		else if (msg.contains("SetConfidence"))
-		{// MSG_SETCONFIDENCE | arg
-			//OnSetConfidenceMsg(arg);
+		else if (msg.contains("SetConfidence")) {// MSG_SETCONFIDENCE | arg
+													// OnSetConfidenceMsg(arg);
 			sendResponse("SetConfidence");
-		}
-		else if (msg.contains("SetResponseTime"))
-		{// MSG_SETCONFIDENCE | arg
-			//OnSetConfidenceMsg(arg);
+		} else if (msg.contains("SetResponseTime")) {// MSG_SETCONFIDENCE | arg
+														// OnSetConfidenceMsg(arg);
 			sendResponse("SetResponseTime");
-		}
-		else if (msg.contains("SetSociaty"))
-		{
+		} else if (msg.contains("SetSociaty")) {
 			// MSG_SETCONFIDENCE | arg
-			//OnSetConfidenceMsg(arg);
-			int count=Integer.parseInt((msg.substring(msg.indexOf('|')+1)).trim());
-			if (count>numSocilites.get())
-			{
-				incermentSocilites(Math.abs(count-numSocilites.get()));
-			}
-			else if (count<numSocilites.get())
-			{
-				decrementSocilites(Math.abs(count-numSocilites.get()));
+			// OnSetConfidenceMsg(arg);
+			int count = Integer.parseInt((msg.substring(msg.indexOf('|') + 1)).trim());
+			if (count > numSocilites.get()) {
+				incermentSocilites(Math.abs(count - numSocilites.get()));
+			} else if (count < numSocilites.get()) {
+				decrementSocilites(Math.abs(count - numSocilites.get()));
 			}
 
 			sendResponse("SetSociaty");
 		}
 
-
-
 		else
 			System.out.println("msg error");
-
-
-
 
 	}
 
@@ -326,13 +313,13 @@ class WorkerRunnable implements Runnable{
 			os = clientSocket.getOutputStream();
 
 			byte[] toSendLenBytes = new byte[4];
-			toSendLenBytes[0] = (byte)((toSendLen >> 0)& 0xff);
-			toSendLenBytes[1] = (byte)((toSendLen >> 8) & 0xff);
-			toSendLenBytes[2] = (byte)((toSendLen >> 16) & 0xff);
-			toSendLenBytes[3] = (byte)((toSendLen >> 24) & 0xff);
+			toSendLenBytes[0] = (byte) ((toSendLen >> 0) & 0xff);
+			toSendLenBytes[1] = (byte) ((toSendLen >> 8) & 0xff);
+			toSendLenBytes[2] = (byte) ((toSendLen >> 16) & 0xff);
+			toSendLenBytes[3] = (byte) ((toSendLen >> 24) & 0xff);
 			os.write(toSendLenBytes);
 
-			//		os.write(ByteBuffer.allocate(4).putInt(yourInt).array());
+			// os.write(ByteBuffer.allocate(4).putInt(yourInt).array());
 			os.write(toSendBytes);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -341,38 +328,37 @@ class WorkerRunnable implements Runnable{
 
 	}
 
-	synchronized private void decrementSocilites(int count)  {
+	synchronized private void decrementSocilites(int count) {
 		// TODO Auto-generated method stub
 
-		for (int i=numSocilites.get()-1;i>=numSocilites.get()-count;i--) {
+		for (int i = numSocilites.get() - 1; i >= numSocilites.get() - count; i--) {
 
-			Thread t=status._threads.get(i);
+			Thread t = status._threads.get(i);
 			((ClientThread) t).set_terminated(true);
-			//		 status._threads.remove(i);
+			// status._threads.remove(i);
 
 		}
-		numSocilites.set(numSocilites.get()-count);
-		//	Client.threadCount=status._threads.size();
+		numSocilites.set(numSocilites.get() - count);
+		// Client.threadCount=status._threads.size();
 	}
 
 	synchronized private void incermentSocilites(int count) {
 		// TODO Auto-generated method stub
-		ClientThread threadInfo=(ClientThread)status._threads.get(0);
-		String dbname=threadInfo._props.getProperty(Client.DB_CLIENT_PROPERTY, Client.DB_CLIENT_PROPERTY_DEFAULT);
+		ClientThread threadInfo = (ClientThread) status._threads.get(0);
+		String dbname = threadInfo._props.getProperty(Client.DB_CLIENT_PROPERTY, Client.DB_CLIENT_PROPERTY_DEFAULT);
 
-		for (int threadid = Client.threadCount; threadid < count+Client.threadCount; threadid++) {
+		for (int threadid = Client.threadCount; threadid < count + Client.threadCount; threadid++) {
 			DB db = null;
 			try {
-				db = DBFactory.newDB(dbname,threadInfo._props);
+				db = DBFactory.newDB(dbname, threadInfo._props);
 			} catch (UnknownDBException e) {
 				System.out.println("Unknown DB " + dbname);
-				//System.exit(0);
-
+				// System.exit(0);
 
 			}
 
 			Thread t = new ClientThread(db, threadInfo._dotransactions, status._workload,
-					threadid, Client.threadCount+count, threadInfo._props, 0,
+					threadid, Client.threadCount + count, threadInfo._props, 0,
 					threadInfo._target, false);
 
 			status._threads.add(t);
@@ -388,21 +374,15 @@ class WorkerRunnable implements Runnable{
 
 		}
 
-
-
-
-		for (int threadid = Client.threadCount; threadid <count+Client.threadCount; threadid++)
-		{
+		for (int threadid = Client.threadCount; threadid < count + Client.threadCount; threadid++) {
 			status._threads.get(threadid).start();
 		}
 
-		Client.threadCount=status._threads.size();
-		numSocilites.set(numSocilites.get()+count);
+		Client.threadCount = status._threads.size();
+		numSocilites.set(numSocilites.get() + count);
 	}
 
 }
-
-
 
 //////////////////////////////////
 
@@ -414,14 +394,12 @@ class WorkerRunnable implements Runnable{
  * 
  */
 
-
 class StatusThread extends Thread {
 	Vector<Thread> _threads;
 	Workload _workload;
 	double curactthroughput;
 	boolean alldone;
-	String summary="";
-
+	String summary = "";
 
 	/**
 	 * The interval for reporting status.
@@ -442,7 +420,6 @@ class StatusThread extends Thread {
 		long lasten = st;
 		long lasttotalops = 0;
 		long lasttotalacts = 0;
-
 
 		do {
 			alldone = true;
@@ -484,12 +461,12 @@ class StatusThread extends Thread {
 			}
 
 			if (totalops == 0) {
-				summary=MyMeasurement.getSummary();
+				summary = MyMeasurement.getSummary();
 				System.out.println(" " + (interval / 1000) + " sec: "
 						+ totalops + " operations; "
 						+ summary);
 			} else {
-				summary=MyMeasurement.getSummary();
+				summary = MyMeasurement.getSummary();
 				System.out.println(" " + (interval / 1000) + " sec: "
 						+ totalops + " operations; " + d.format(curthroughput)
 						+ " current ops/sec; " + summary);
@@ -501,29 +478,28 @@ class StatusThread extends Thread {
 			}
 
 		} while (!alldone && !_workload.isStopRequested());
-		alldone=true;
+		alldone = true;
 		VisualizationThread.stopServer();
 	}
 }
-
 
 /**
  * Main class for executing BG.
  */
 public class Client {
 	public static CountDownLatch threadsStart;
-	public static long experimentStartTime=0;
-	//public static AtomicInteger threadcount= new AtomicInteger(0); 
-	static int visualizerPort=6001;
-	final public static int PARTITIONED=0; 
-	final public static int RETAIN=1; 
-	final public static int DELEGATE=2; 
-	final public static int HYBRID_RETAIN=3; 
-	final public static int HYBRID_DELEGATE=4;
-	public static int BENCHMARKING_MODE=PARTITIONED;
+	public static long experimentStartTime = 0;
+	// public static AtomicInteger threadcount= new AtomicInteger(0);
+	static int visualizerPort = 6001;
+	final public static int PARTITIONED = 0;
+	final public static int RETAIN = 1;
+	final public static int DELEGATE = 2;
+	final public static int HYBRID_RETAIN = 3;
+	final public static int HYBRID_DELEGATE = 4;
+	public static int BENCHMARKING_MODE = PARTITIONED;
 	private static final String BENCHMARKENDMSG = " THEEND. ";
 	private static final String EXECUTIONDONEMSG = "EXECUTIONDONE";
-	public static final String SHUTDOWNMSG="SHUTDOWN!!!";
+	public static final String SHUTDOWNMSG = "SHUTDOWN!!!";
 	public static final String OPERATION_COUNT_PROPERTY = "operationcount";
 	public static final String OPERATION_COUNT_PROPERTY_DEFAULT = "0";
 	public static final String NUM_LOAD_THREAD_PROPERTY = "numloadthreads";
@@ -587,8 +563,8 @@ public class Client {
 	public static final String CLIENTS_INFO_PROPERTY = "clients";
 	public static final String MACHINE_ID_PROPERTY_DEFAULT = "0";
 	public static final String NUM_BG_PROPERTY = "numclients";
-	public static final String 	BENCHMARKING_MODE_PROPERTY = "benchmarkingmode";
-	public static final String 	BENCHMARKING_MODE_PROPERTY_DEFAULT = "partitioned";
+	public static final String BENCHMARKING_MODE_PROPERTY = "benchmarkingmode";
+	public static final String BENCHMARKING_MODE_PROPERTY_DEFAULT = "partitioned";
 	public static final String NUM_MEMBERS_PROPERTY = "nummembers";
 	public static final String NUM_SOCKETS_PROPERTY = "numsockets";
 	public static final String NUM_BG_PROPERTY_DEFAULT = "1";
@@ -597,26 +573,26 @@ public class Client {
 	public static final String TARGET__PROPERTY = "target";
 	public static final String TARGET_PROPERTY_DEFAULT = "0";
 	public static final String LOG_DIR_PROPERTY = "logdir";
-	public static final String LOG_DIR_PROPERTY_DEFAULT ="." ;//"C:/Users/yaz/Documents/BGTest_Communication_Infrastructure/logs"
+	public static final String LOG_DIR_PROPERTY_DEFAULT = ".";// "C:/Users/yaz/Documents/BGTest_Communication_Infrastructure/logs"
 	public static final String PROBS_PROPERTY = "probs";
 	public static final String PROBS_PROPERTY_DEFAULT = "";
 	public static final String ENFORCE_FRIENDSHIP_PROPERTY = "enforcefriendship";
 	public static final String ENFORCE_FRIENDSHIP_PROPERTY_DEFAULT = "false";
 	public static Workload workload = null;
-	public static Semaphore releaseWorkers= new Semaphore(0);
+	public static Semaphore releaseWorkers = new Semaphore(0);
 
-	//properties for open simulation
-	public static final String SIMTYPE_PROPERTY  = "simulationtype";
-	public static final String DISTRITYPE_PROPERTY  = "distributiontype";
-	public static final String LAMBDA_PROPERTY  = "lambda"; //req/sec
-	public static final String SIM_WARMUP_TIME_PROPERTY  = "simulationwarmuptime"; //s
+	// properties for open simulation
+	public static final String SIMTYPE_PROPERTY = "simulationtype";
+	public static final String DISTRITYPE_PROPERTY = "distributiontype";
+	public static final String LAMBDA_PROPERTY = "lambda"; // req/sec
+	public static final String SIM_WARMUP_TIME_PROPERTY = "simulationwarmuptime"; // s
 
-	public static final String SIMTYPE_PROPERTY_DEFAULT  = "closed";
-	public static final String DISTRITYPE_PROPERTY_DEFAULT  = "1";
-	public static final String LAMBDA_PROPERTY_DEFAULT  = "10"; //req/sec
-	public static final String SIM_WARMUP_TIME_PROPERTY_DEFAULT  = "0"; //ms
+	public static final String SIMTYPE_PROPERTY_DEFAULT = "closed";
+	public static final String DISTRITYPE_PROPERTY_DEFAULT = "1";
+	public static final String LAMBDA_PROPERTY_DEFAULT = "10"; // req/sec
+	public static final String SIM_WARMUP_TIME_PROPERTY_DEFAULT = "0"; // ms
 
-	//DB.get constants
+	// DB.get constants
 	private final String AVG_PENDING_PER_USER = "avgpendingperuser";
 	private final String AVG_FRNDS_PER_USER = "avgfriendsperuser";
 	private final String RESOURCES_PER_USER = "resourcesperuser";
@@ -624,7 +600,7 @@ public class Client {
 
 	private static int CLIENT_THREADS_INIT_BATCH = 50;
 
-	//Benchmark stats parameters
+	// Benchmark stats parameters
 	public static final String TimeTillFirstDeath = "TimeTillFirstDeath";
 	public static final String OpsTillFirstDeath = "OpsTillFirstDeath";
 	public static final String ActsTillFirstDeath = "ActsTillFirstDeath";
@@ -632,11 +608,9 @@ public class Client {
 	public static final String NumReadOps = "NumReadOps";
 	public static final String NumPrunedOps = "NumPruned";
 	public static final String ValidationTime = "ValidationTime";
-	public static final String FreshnessConfidence = "FreshnessConfidence";	
+	public static final String FreshnessConfidence = "FreshnessConfidence";
 	public static final String NumWriteOps = "NumWriteOps";
 	public static final String NumProcessedOps = "NumProcessed";
-
-
 
 	/**
 	 * The maximum amount of time (in seconds) for which the benchmark will be
@@ -652,65 +626,72 @@ public class Client {
 	public static int threadCount = 1;
 
 	public static void usageMessage() {
+		System.out.println("Entering usageMessage method");
 		System.out.println("Usage: java BG [options]");
 		System.out.println("Options:");
 		System.out
-		.println("  -target n: attempt to do n operations per second (default: unlimited) - can also\n"
-				+ "             be specified as the \"target\" property using -p");
+				.println("  -target n: attempt to do n operations per second (default: unlimited) - can also\n"
+						+ "             be specified as the \"target\" property using -p");
 		System.out.println("  -load:  run the loading phase of the workload");
 		System.out
-		.println("  -loadindex:  run the loading phase of the workload and create index structures once loadig completed");
+				.println(
+						"  -loadindex:  run the loading phase of the workload and create index structures once loadig completed");
 		System.out
-		.println("  -schema:  Create the schema used for the load phase of the workload");
+				.println("  -schema:  Create the schema used for the load phase of the workload");
 		System.out
-		.println("  -dropupdates:  Drops friendships if available else create the schema used for the load phase of the workload");
+				.println(
+						"  -dropupdates:  Drops friendships if available else create the schema used for the load phase of the workload");
 		System.out
-		.println("  -loadfriends:  Create friendships if users available else runs the load phase");
+				.println("  -loadfriends:  Create friendships if users available else runs the load phase");
 		System.out
-		.println("  -testdb:  Tests the database by trying to connect to it");
+				.println("  -testdb:  Tests the database by trying to connect to it");
 		System.out
-		.println("  -stats:  Queries the database stats such as usercount, avgfriendcountpermember and etc.");
+				.println("  -stats:  Queries the database stats such as usercount, avgfriendcountpermember and etc.");
 		System.out
-		.println("  -t:  run the benchmark phase of the workload (default)");
+				.println("  -t:  run the benchmark phase of the workload (default)");
 		System.out
-		.println("  -db dbname: specify the name of the DB to use  - \n"
-				+ "              can also be specified as the \"db\" property using -p");
+				.println("  -db dbname: specify the name of the DB to use  - \n"
+						+ "              can also be specified as the \"db\" property using -p");
 		System.out
-		.println("  -P propertyfile: load properties from the given file. Multiple files can");
+				.println("  -P propertyfile: load properties from the given file. Multiple files can");
 		System.out
-		.println("                   be specified, and will be processed in the order specified");
+				.println("                   be specified, and will be processed in the order specified");
 		System.out
-		.println("  -p name=value:  specify a property to be passed to the DB and workloads;");
+				.println("  -p name=value:  specify a property to be passed to the DB and workloads;");
 		System.out
-		.println("                  multiple properties can be specified, and override any");
+				.println("                  multiple properties can be specified, and override any");
 		System.out.println("                  values in the propertyfile");
 		System.out
-		.println("  -s:  show status during run (default: no status)");
+				.println("  -s:  show status during run (default: no status)");
 		System.out.println("");
 		System.out.println("Required properties:");
 		System.out
-		.println("  "
-				+ USER_WORKLOAD_PROPERTY
-				+ ", "
-				+ FRIENDSHIP_WORKLOAD_PROPERTY
-				+ " ,"
-				+ RESOURCE_WORKLOAD_PROPERTY
-				+ ": the name of the workload class to use for -load or -loadindex (e.g. edu.usc.bg.workloads.CoreWorkload)");
+				.println("  "
+						+ USER_WORKLOAD_PROPERTY
+						+ ", "
+						+ FRIENDSHIP_WORKLOAD_PROPERTY
+						+ " ,"
+						+ RESOURCE_WORKLOAD_PROPERTY
+						+ ": the name of the workload class to use for -load or -loadindex (e.g. edu.usc.bg.workloads.CoreWorkload)");
 		System.out
-		.println("  "
-				+ WORKLOAD_PROPERTY
-				+ ": the name of the workload class to use for -t (e.g. edu.usc.bg.workloads.CoreWorkload)");
+				.println("  "
+						+ WORKLOAD_PROPERTY
+						+ ": the name of the workload class to use for -t (e.g. edu.usc.bg.workloads.CoreWorkload)");
 		System.out.println("");
 		System.out
-		.println("To run the transaction phase from multiple servers, start a separate client on each.");
+				.println("To run the transaction phase from multiple servers, start a separate client on each.");
 		System.out
-		.println("To run the load phase from multiple servers, start a separate client on each; additionally,");
+				.println("To run the load phase from multiple servers, start a separate client on each; additionally,");
 		System.out
-		.println("use the \"usercount\" and \"useroffset\" properties to divide up the records to be inserted");
+				.println("use the \"usercount\" and \"useroffset\" properties to divide up the records to be inserted");
 		System.out
-		.println("You can also load data store using the dzipfian fragments by using \"requestdistribution=dzipfian\" ");
+				.println(
+						"You can also load data store using the dzipfian fragments by using \"requestdistribution=dzipfian\" ");
 		System.out
-		.println("and \"zipfianmean=0.27\", for this approach you need to specify the number of bgclients, the current bgclient machineid and the rates of all the involved machienids");
+				.println(
+						"and \"zipfianmean=0.27\", for this approach you need to specify the number of bgclients, the current bgclient machineid and the rates of all the involved machienids");
+
+		System.out.println("Exiting usageMessage method");
 	}
 
 	/**
@@ -749,21 +730,23 @@ public class Client {
 	 * if BG is in rating mode.
 	 * 
 	 * @param opcount
-	 *            The total session count.
+	 *                       The total session count.
 	 * @param actcount
-	 *            The total action count.
+	 *                       The total action count.
 	 * @param runtime
-	 *            The duration of the benchmark.
+	 *                       The duration of the benchmark.
 	 * @param outpS
-	 *            Used when the statistics are written on a socket for the
-	 *            coordinator.
+	 *                       Used when the statistics are written on a socket for
+	 *                       the
+	 *                       coordinator.
 	 * @param props
-	 *            The properties of the benchmark.
+	 *                       The properties of the benchmark.
 	 * @param benchmarkStats
-	 *            Contains the statistics of the benchmark.
+	 *                       Contains the statistics of the benchmark.
 	 * @throws IOException
-	 *             Either failed to write to output stream or failed to close
-	 *             it.
+	 *                     Either failed to write to output stream or failed to
+	 *                     close
+	 *                     it.
 	 */
 
 	/**
@@ -775,9 +758,10 @@ public class Client {
 	 * @param outpS
 	 * @throws IOException
 	 */
-	private static void printFinalStats(Properties props, int opcount, int actcount, long runtime, ClientDataStats benchmarkStats, PrintWriter outpS) throws IOException {
-		OutputStream out=null;
-		if(benchmarkStats == null) {
+	private static void printFinalStats(Properties props, int opcount, int actcount, long runtime,
+			ClientDataStats benchmarkStats, PrintWriter outpS) throws IOException {
+		OutputStream out = null;
+		if (benchmarkStats == null) {
 			System.out.println("The benchmark statistics were not populated.");
 			return;
 		}
@@ -819,8 +803,8 @@ public class Client {
 						+ " ");
 				outpS.flush();
 
-				String messageBenchmarkStats="";
-				Map<String,String> statsAndMessage = new HashMap<String,String>(); 
+				String messageBenchmarkStats = "";
+				Map<String, String> statsAndMessage = new HashMap<String, String>();
 
 				// the run time and throughput right when the first thread
 				// dies
@@ -836,19 +820,19 @@ public class Client {
 				statsAndMessage.put("NumStaleOps", "NUMSTALE(OPS)");
 				statsAndMessage.put("FreshnessConfidence", "FRESHNESSCONF(%)");
 
-				printStatsViaMap(benchmarkStats,statsAndMessage, outpS);
+				printStatsViaMap(benchmarkStats, statsAndMessage, outpS);
 
 				if (benchmarkStats.getTimeTillFirstDeath() != null) {
-					if(benchmarkStats.getOpsTillFirstDeath() != null) {
-						messageBenchmarkStats += " RAMPEDTHROUGHPUT(SESSIONS/SECS):" + sessionthroughputTillFirstDeath + " ";
+					if (benchmarkStats.getOpsTillFirstDeath() != null) {
+						messageBenchmarkStats += " RAMPEDTHROUGHPUT(SESSIONS/SECS):" + sessionthroughputTillFirstDeath
+								+ " ";
 					}
 
-					if(benchmarkStats.getActsTillFirstDeath() != null) {
+					if (benchmarkStats.getActsTillFirstDeath() != null) {
 						messageBenchmarkStats += " RAMPEDTHROUGHPUT(ACTIONS/SECS):"
 								+ actthroughputTillFirstDeath + " ";
 					}
 				}
-
 
 				if (benchmarkStats.getNumReadOps() != null) {
 					messageBenchmarkStats += " READ(OPS):"
@@ -858,18 +842,17 @@ public class Client {
 				else {
 					messageBenchmarkStats += " READ(OPS):0 ";
 				}
-				if (benchmarkStats.getNumStaleOps()!= null) {
+				if (benchmarkStats.getNumStaleOps() != null) {
 					messageBenchmarkStats += " NUMSTALE(OPS):"
 							+ ((double) benchmarkStats.getNumStaleOps())
 							+ " ";
-				} 
-				else {
+				} else {
 					messageBenchmarkStats += " NUMSTALE(OPS):0 ";
 				}
 
-
 				if (benchmarkStats.getNumStaleOps() != null && benchmarkStats.getNumReadOps() > 0) {
-					messageBenchmarkStats += " STALENESS(OPS):" + (((double) benchmarkStats.getNumStaleOps()) / benchmarkStats.getNumReadOps()) + " ";
+					messageBenchmarkStats += " STALENESS(OPS):"
+							+ (((double) benchmarkStats.getNumStaleOps()) / benchmarkStats.getNumReadOps()) + " ";
 
 				} else {
 					messageBenchmarkStats += " STALENESS(OPS):0 ";
@@ -885,7 +868,10 @@ public class Client {
 				outpS.flush();
 			}
 
-			/* write to file if no destination file is provided the results will be written to stdout.*/
+			/*
+			 * write to file if no destination file is provided the results will be written
+			 * to stdout.
+			 */
 
 			String exportFile = props.getProperty(Client.EXPORT_FILE_PROPERTY);
 			if (exportFile == null) {
@@ -908,7 +894,7 @@ public class Client {
 			String params = "Runtime configuration parameters (those missing from the list have default values):\n";
 			@SuppressWarnings("unchecked")
 			Enumeration<Object> em = (Enumeration<Object>) props
-			.propertyNames();
+					.propertyNames();
 			while (em.hasMoreElements()) {
 				String str = (String) em.nextElement();
 				params += ("\n" + str + ": " + props.get(str));
@@ -918,15 +904,15 @@ public class Client {
 			params += "sanityMemberCount="
 					+ props.getProperty(Client.INIT_USER_COUNT_PROPERTY,
 							Client.INIT_USER_COUNT_PROPERTY_DEFAULT)
-							+ " ,sanityAvgFriendsPerUserCount="
-							+ props.getProperty(Client.INIT_FRND_COUNT_PROPERTY,
-									Client.INIT_FRND_COUNT_PROPERTY_DEFAULT)
-									+ " ,sanityAvgPendingsPerUserCount="
-									+ props.getProperty(Client.INIT_PEND_COUNT_PROPERTY,
-											Client.INIT_PEND_COUNT_PROPERTY)
-											+ " ,sanityResourcePerUserCount="
-											+ props.getProperty(Client.INIT_RES_COUNT_PROPERTY,
-													Client.INIT_RES_COUNT_PROPERTY_DEFAULT);
+					+ " ,sanityAvgFriendsPerUserCount="
+					+ props.getProperty(Client.INIT_FRND_COUNT_PROPERTY,
+							Client.INIT_FRND_COUNT_PROPERTY_DEFAULT)
+					+ " ,sanityAvgPendingsPerUserCount="
+					+ props.getProperty(Client.INIT_PEND_COUNT_PROPERTY,
+							Client.INIT_PEND_COUNT_PROPERTY)
+					+ " ,sanityResourcePerUserCount="
+					+ props.getProperty(Client.INIT_RES_COUNT_PROPERTY,
+							Client.INIT_RES_COUNT_PROPERTY_DEFAULT);
 
 			printer.write(params);
 			printer.write("OVERALL", "RunTime(ms)", runtime);
@@ -937,7 +923,6 @@ public class Client {
 
 			printer.write("OVERALL", "Throughput(actions/sec)", actthroughput);
 
-
 			System.out.println("OVERALLOPCOUNT(SESSIONS):" + opcount);
 			System.out.println("OVERALLTHROUGHPUT(SESSIONS/SECS):"
 					+ sessionthroughput);
@@ -945,7 +930,7 @@ public class Client {
 			System.out.println("OVERALLTHROUGHPUT(ACTIONS/SECS):"
 					+ actthroughput);
 
-			//if (benchmarkStats != null) {
+			// if (benchmarkStats != null) {
 			// the run time and throughput right when the first thread dies
 			if (benchmarkStats.getTimeTillFirstDeath() != null) {
 				printer.write("UntilFirstThreadsDeath", "RunTime(ms)",
@@ -964,8 +949,8 @@ public class Client {
 						"Throughput(sessions/sec)",
 						sessionthroughputTillFirstDeath);
 				System.out
-				.println("RAMPEDOVERALLTHROUGHPUT(SESSIONS/SECS):"
-						+ sessionthroughputTillFirstDeath);
+						.println("RAMPEDOVERALLTHROUGHPUT(SESSIONS/SECS):"
+								+ sessionthroughputTillFirstDeath);
 			}
 			if (benchmarkStats.getActsTillFirstDeath() != null) {
 				printer.write("UntilFirstThreadsDeath", "opcount(actions)",
@@ -993,7 +978,7 @@ public class Client {
 				printer.write("OVERALL",
 						"Staleness(staleReads/totalReads)",
 						((double) benchmarkStats.getNumStaleOps())
-						/ benchmarkStats.getNumReadOps());
+								/ benchmarkStats.getNumReadOps());
 			}
 			if (benchmarkStats.getNumReadSessions() != null)
 				printer.write("OVERALL", "Read(sessions)",
@@ -1006,7 +991,7 @@ public class Client {
 				printer.write("OVERALL",
 						"Staleness(staleSessions/totalSessions)",
 						((double) benchmarkStats.getNumStaleSessions())
-						/ benchmarkStats.getNumStaleSessions());
+								/ benchmarkStats.getNumStaleSessions());
 			if (benchmarkStats.getNumPrunedOps() != null)
 				printer.write("OVERALL", "Pruned(ops)",
 						benchmarkStats.getNumPrunedOps());
@@ -1024,13 +1009,13 @@ public class Client {
 				printer.write("OVERALL", " FRESHNESSCONF(%):",
 						benchmarkStats.getFreshnessConfidence());
 
-			//}// if benchmarkStats not null
+			// }// if benchmarkStats not null
 			System.out.println("[SatisfyingPerc] " + MyMeasurement.getSatisfyingPerc());
 			printer.write(MyMeasurement.getFinalResults());
 			// Needed in case you want to print out frequency related stats
 			printer.write(CoreWorkload.getFrequecyStats().toString());
 		} finally {
-			if (printer != null && out!=System.out) {
+			if (printer != null && out != System.out) {
 				printer.close();
 			}
 		}
@@ -1042,281 +1027,310 @@ public class Client {
 	 * @param statsAndMessage
 	 * @param outpS
 	 */
-	private static void printStatsViaMap(ClientDataStats benchmarkStats, Map<String, String> statsAndMessage, PrintWriter outpS) {
-		Map<String,Double> benchmarkStatsMap = benchmarkStats.getStats();
-		for(Entry<String, String> entry:statsAndMessage.entrySet()) {
+	private static void printStatsViaMap(ClientDataStats benchmarkStats, Map<String, String> statsAndMessage,
+			PrintWriter outpS) {
+		Map<String, Double> benchmarkStatsMap = benchmarkStats.getStats();
+		for (Entry<String, String> entry : statsAndMessage.entrySet()) {
 			String paramName = (String) entry.getKey();
-			String message = (String)entry.getValue();
+			String message = (String) entry.getValue();
 			Double stat = benchmarkStatsMap.get(paramName);
-			if(stat == null) {
+			if (stat == null) {
 				continue;
 			}
 			outpS.print(" " + message + ":" + stat + " ");
 		}
 		outpS.flush();
 	}
-	//	public void runBGCommandLineTest(String[] args, Socket listenerConnection) {
-	//		String dbname;
-	//		Properties props = new Properties();
-	//		Properties fileprops = new Properties();
-	//		//Enums & map of enum,obj
-	//		boolean[] inputArguments = {true, false, false, false, false, false, false, false, false};
+	// public void runBGCommandLineTest(String[] args, Socket listenerConnection) {
+	// String dbname;
+	// Properties props = new Properties();
+	// Properties fileprops = new Properties();
+	// //Enums & map of enum,obj
+	// boolean[] inputArguments = {true, false, false, false, false, false, false,
+	// false, false};
 	//
-	//		final int dotransactions = 0;
-	//		final int doSchema = 1;
-	//		final int doTestDB = 2;
-	//		final int doStats = 3;
-	//		final int doIndex = 4;
-	//		final int doLoadFriends = 5;
-	//		final int doDropUpdates = 6;
-	//		final int doReset = 7;
-	//		final int status = 8;
+	// final int dotransactions = 0;
+	// final int doSchema = 1;
+	// final int doTestDB = 2;
+	// final int doStats = 3;
+	// final int doIndex = 4;
+	// final int doLoadFriends = 5;
+	// final int doDropUpdates = 6;
+	// final int doReset = 7;
+	// final int status = 8;
 	//
-	//		int target = 0;
+	// int target = 0;
 	//
-	//		// parse arguments
-	//		if (args.length == 0) {
-	//			usageMessage();
-	//			System.out.println(EXECUTIONDONEMSG);
-	//			return;
-	//		}
+	// // parse arguments
+	// if (args.length == 0) {
+	// usageMessage();
+	// System.out.println(EXECUTIONDONEMSG);
+	// return;
+	// }
 	//
-	//		readCmdArgs(args,props, inputArguments, fileprops);
+	// readCmdArgs(args,props, inputArguments, fileprops);
 	//
-	//		//establish socket connection
-	//		//		PrintWriter outpS = null;
-	//		//		Scanner inSS = null;
-	//		//		if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT)) == true && inputArguments[dotransactions]) {
-	//		//			Object[] printerScanner = establishSocketConnection(listenerConnection,props);
-	//		//			outpS = (PrintWriter) printerScanner[0];
-	//		//			inSS = (Scanner) printerScanner[1];
-	//		//		}
+	// //establish socket connection
+	// // PrintWriter outpS = null;
+	// // Scanner inSS = null;
+	// // if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY,
+	// RATING_MODE_PROPERTY_DEFAULT)) == true && inputArguments[dotransactions]) {
+	// // Object[] printerScanner =
+	// establishSocketConnection(listenerConnection,props);
+	// // outpS = (PrintWriter) printerScanner[0];
+	// // inSS = (Scanner) printerScanner[1];
+	// // }
 	//
-	//		// overwrite file properties with properties from the command line
-	//		for (Enumeration e = props.propertyNames(); e.hasMoreElements();) {
-	//			String prop = (String) e.nextElement();
+	// // overwrite file properties with properties from the command line
+	// for (Enumeration e = props.propertyNames(); e.hasMoreElements();) {
+	// String prop = (String) e.nextElement();
 	//
-	//			fileprops.setProperty(prop, props.getProperty(prop));
-	//		}
+	// fileprops.setProperty(prop, props.getProperty(prop));
+	// }
 	//
-	//		props = fileprops;
+	// props = fileprops;
 	//
-	//		if (!checkRequiredProperties(props, inputArguments[dotransactions], inputArguments[doSchema], inputArguments[doTestDB],
-	//				inputArguments[doStats])) {
-	//			System.out.println(EXECUTIONDONEMSG);
-	//			return;
-	//		}
+	// if (!checkRequiredProperties(props, inputArguments[dotransactions],
+	// inputArguments[doSchema], inputArguments[doTestDB],
+	// inputArguments[doStats])) {
+	// System.out.println(EXECUTIONDONEMSG);
+	// return;
+	// }
 	//
-	//		machineid = Integer.parseInt(props.getProperty(MACHINE_ID_PROPERTY,
-	//				MACHINE_ID_PROPERTY_DEFAULT));
-	//		numBGClients = Integer.parseInt(props.getProperty(NUM_BG_PROPERTY,
-	//				NUM_BG_PROPERTY_DEFAULT));
-	//		logDir = props.getProperty(Client.LOG_DIR_PROPERTY, Client.LOG_DIR_PROPERTY_DEFAULT);
-	//		threadCount = Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY,THREAD_CNT_PROPERTY_DEFAULT));
-	//		if (inputArguments[dotransactions]) {
-	//			threadCount = threadCountForTransactions(props, threadCount);
-	//		}
-	//		else {
-	//			threadCount = threadCountForNoTransactions(props, inputArguments, doSchema, doTestDB, doStats, doReset, threadCount);
-	//		}
-	//		
-	//		
-	//		
-	//		// Start YAZ Server Code
-	//		BGServer bb=null;
-	//		if (numBGClients>1)  
-	//		{
-	//			if (props.getProperty(Client.CLIENTS_INFO_PROPERTY)==null ||props.getProperty(Client.NUM_MEMBERS_PROPERTY)==null  )
-	//			{
-	//				System.out.println("Argument is missing. Number of members and Client Info are required");
-	//				System.exit(0);
-	//			}
-	//			numMembers=Integer.parseInt(props.getProperty(NUM_MEMBERS_PROPERTY));
-	//			int numSockets=threadCount;
-	//			if (props.getProperty(NUM_SOCKETS_PROPERTY)!=null)
-	//				numSockets=Integer.parseInt(props.getProperty(NUM_SOCKETS_PROPERTY));
-	//
-	//			ConcurrentHashMap<Integer, ClientInfo> ClientInfoMap=PopulateClientInfo(props.getProperty(Client.CLIENTS_INFO_PROPERTY),Client.numBGClients);
-	//
-	//			//		
-	//			bb = new BGServer(machineid,numBGClients,numMembers,0,ClientInfoMap, 0,numSockets);
-	//
-	//
-	//		}
-	//		else
-	//		{ // one BGClient
-	//			numMembers=Integer.parseInt(props.getProperty(Client.USER_COUNT_PROPERTY,USER_COUNT_PROPERTY_DEFAULT));
-	//		}
-	//		// End Yaz Server code
-	//		// verify threadcount
-	//		// get number of threads, target and db
-	//		//		CoreWorkload.commandLineMode=true;
-	//		CoreWorkload.enableLogging=false;
-	//		threadCount = Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY,THREAD_CNT_PROPERTY_DEFAULT));
-	//		if (inputArguments[dotransactions]) {
-	//			threadCount = threadCountForTransactions(props, threadCount);
-	//		}
-	//		else {
-	//			threadCount = threadCountForNoTransactions(props, inputArguments, doSchema, doTestDB, doStats, doReset, threadCount);
-	//		}
-	//
-	//		//		int monitoringTime = Integer.parseInt(props.getProperty(MONITOR_DURATION_PROPERTY, MONITOR_DURATION_PROPERTY_DEFAULT));
-	//		//		long maxExecutionTime = Integer.parseInt(props.getProperty(MAX_EXECUTION_TIME, MAX_EXECUTION_TIME_DEFAULT));
-	//		//		System.out.println("*****max execution time specified : " + maxExecutionTime);
-	//		dbname = props.getProperty(DB_CLIENT_PROPERTY, DB_CLIENT_PROPERTY_DEFAULT);
-	//		target = Integer.parseInt(props.getProperty(TARGET__PROPERTY, TARGET_PROPERTY_DEFAULT));
-	//
-	//		// compute the target throughput
-	//		double targetperthreadperms = -1;
-	//		if (target > 0) {
-	//			double targetperthread = ((double) target) / ((double) threadCount);
-	//			targetperthreadperms = targetperthread / 1000.0;
-	//		}
-	//		//		System.out.println("BG Client: ThreadCount =" + threadCount);
-	//
-	//		// show a warning message that creating the workload is taking a while
-	//		// but only do so if it is taking longer than 2 seconds
-	//		// (showing the message right away if the setup wasn't taking very long
-	//		// was confusing people).	
-	//
-	//		Thread warningthread = new Thread() {
-	//			public void run() {
-	//				try {
-	//					sleep(2000);
-	//				} catch (InterruptedException e) {
-	//					System.out.println(EXECUTIONDONEMSG);
-	//					return;
-	//				}
-	//				System.out.println(" (might take a few minutes for large data sets)");
-	//			}
-	//		};
-	//
-	//		warningthread.start();
-	//
-	//		System.out.println();
-	//		System.out.println("Loading workload...");
-	//
-	//		// load the workload
-	//		ClassLoader classLoader = Client.class.getClassLoader();
-	//
-	//		Workload userWorkload = null;
-	//		Workload friendshipWorkload = null;
-	//		Workload resourceWorkload = null;
-	//
-	//		try {
-	//			if (inputArguments[dotransactions]) {
-	//				// check to see if the sum of all activity and action
-	//				// proportions are 1
-	//				//				if(!isTotalProbabilityOne(props)){
-	//				//				return;	
-	//				//				}
-	//
-	//				initializeDB(dbname, props, classLoader);
-	//				if (numBGClients > 1 && bb != null) {
-	//					BGServer.initializeWorkers(dbname, props);
-	//				}
-	//
-	//				if (Client.workload!=null)
-	//				{ // release workers, so they can start servicing requests 
-	//					releaseWorkers.release(BGServer.NumWorkerThreads);
-	//
-	//				}
-	//				else
-	//				{
-	//					System.out.println("Error Client workload is null can't start workers");
-	//					System.exit(0);
-	//				}
-	//
-	//				MyMeasurement.resetMeasurement();
-	//				System.out.println("\nAfter init: " + new Date());
-	//			}
-	//		} catch (Exception e) {
-	//			e.printStackTrace(System.out);
-	//			System.out.println(EXECUTIONDONEMSG);
-	//			return;
-	//		}
+	// machineid = Integer.parseInt(props.getProperty(MACHINE_ID_PROPERTY,
+	// MACHINE_ID_PROPERTY_DEFAULT));
+	// numBGClients = Integer.parseInt(props.getProperty(NUM_BG_PROPERTY,
+	// NUM_BG_PROPERTY_DEFAULT));
+	// logDir = props.getProperty(Client.LOG_DIR_PROPERTY,
+	// Client.LOG_DIR_PROPERTY_DEFAULT);
+	// threadCount =
+	// Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY,THREAD_CNT_PROPERTY_DEFAULT));
+	// if (inputArguments[dotransactions]) {
+	// threadCount = threadCountForTransactions(props, threadCount);
+	// }
+	// else {
+	// threadCount = threadCountForNoTransactions(props, inputArguments, doSchema,
+	// doTestDB, doStats, doReset, threadCount);
+	// }
 	//
 	//
 	//
+	// // Start YAZ Server Code
+	// BGServer bb=null;
+	// if (numBGClients>1)
+	// {
+	// if (props.getProperty(Client.CLIENTS_INFO_PROPERTY)==null
+	// ||props.getProperty(Client.NUM_MEMBERS_PROPERTY)==null )
+	// {
+	// System.out.println("Argument is missing. Number of members and Client Info
+	// are required");
+	// System.exit(0);
+	// }
+	// numMembers=Integer.parseInt(props.getProperty(NUM_MEMBERS_PROPERTY));
+	// int numSockets=threadCount;
+	// if (props.getProperty(NUM_SOCKETS_PROPERTY)!=null)
+	// numSockets=Integer.parseInt(props.getProperty(NUM_SOCKETS_PROPERTY));
+	//
+	// ConcurrentHashMap<Integer, ClientInfo>
+	// ClientInfoMap=PopulateClientInfo(props.getProperty(Client.CLIENTS_INFO_PROPERTY),Client.numBGClients);
+	//
+	// //
+	// bb = new BGServer(machineid,numBGClients,numMembers,0,ClientInfoMap,
+	// 0,numSockets);
 	//
 	//
-	//		warningthread.interrupt();
+	// }
+	// else
+	// { // one BGClient
+	// numMembers=Integer.parseInt(props.getProperty(Client.USER_COUNT_PROPERTY,USER_COUNT_PROPERTY_DEFAULT));
+	// }
+	// // End Yaz Server code
+	// // verify threadcount
+	// // get number of threads, target and db
+	// // CoreWorkload.commandLineMode=true;
+	// CoreWorkload.enableLogging=false;
+	// threadCount =
+	// Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY,THREAD_CNT_PROPERTY_DEFAULT));
+	// if (inputArguments[dotransactions]) {
+	// threadCount = threadCountForTransactions(props, threadCount);
+	// }
+	// else {
+	// threadCount = threadCountForNoTransactions(props, inputArguments, doSchema,
+	// doTestDB, doStats, doReset, threadCount);
+	// }
 	//
-	//		int numWarmpup = 0;
-	//		if ((numWarmpup = Integer.parseInt(props.getProperty(WARMUP_OP_PROPERTY, WARMUP_OP_PROPERTY_DEFAULT))) != 0
-	//				&& inputArguments[dotransactions]) {
-	//			warmupPhase(dbname, props, inputArguments[dotransactions], threadCount, targetperthreadperms, numWarmpup);
-	//			// we do not want the measurement for warmup to be counted in the
-	//			// overall measurements
-	//			MyMeasurement.resetMeasurement();
-	//			System.out.println("\nAfter warmup: " + new Date());
-	//		}// end warmup
+	// // int monitoringTime =
+	// Integer.parseInt(props.getProperty(MONITOR_DURATION_PROPERTY,
+	// MONITOR_DURATION_PROPERTY_DEFAULT));
+	// // long maxExecutionTime =
+	// Integer.parseInt(props.getProperty(MAX_EXECUTION_TIME,
+	// MAX_EXECUTION_TIME_DEFAULT));
+	// // System.out.println("*****max execution time specified : " +
+	// maxExecutionTime);
+	// dbname = props.getProperty(DB_CLIENT_PROPERTY, DB_CLIENT_PROPERTY_DEFAULT);
+	// target = Integer.parseInt(props.getProperty(TARGET__PROPERTY,
+	// TARGET_PROPERTY_DEFAULT));
+	//
+	// // compute the target throughput
+	// double targetperthreadperms = -1;
+	// if (target > 0) {
+	// double targetperthread = ((double) target) / ((double) threadCount);
+	// targetperthreadperms = targetperthread / 1000.0;
+	// }
+	// // System.out.println("BG Client: ThreadCount =" + threadCount);
+	//
+	// // show a warning message that creating the workload is taking a while
+	// // but only do so if it is taking longer than 2 seconds
+	// // (showing the message right away if the setup wasn't taking very long
+	// // was confusing people).
+	//
+	// Thread warningthread = new Thread() {
+	// public void run() {
+	// try {
+	// sleep(2000);
+	// } catch (InterruptedException e) {
+	// System.out.println(EXECUTIONDONEMSG);
+	// return;
+	// }
+	// System.out.println(" (might take a few minutes for large data sets)");
+	// }
+	// };
+	//
+	// warningthread.start();
+	//
+	// System.out.println();
+	// System.out.println("Loading workload...");
+	//
+	// // load the workload
+	// ClassLoader classLoader = Client.class.getClassLoader();
+	//
+	// Workload userWorkload = null;
+	// Workload friendshipWorkload = null;
+	// Workload resourceWorkload = null;
+	//
+	// try {
+	// if (inputArguments[dotransactions]) {
+	// // check to see if the sum of all activity and action
+	// // proportions are 1
+	// // if(!isTotalProbabilityOne(props)){
+	// // return;
+	// // }
+	//
+	// initializeDB(dbname, props, classLoader);
+	// if (numBGClients > 1 && bb != null) {
+	// BGServer.initializeWorkers(dbname, props);
+	// }
+	//
+	// if (Client.workload!=null)
+	// { // release workers, so they can start servicing requests
+	// releaseWorkers.release(BGServer.NumWorkerThreads);
+	//
+	// }
+	// else
+	// {
+	// System.out.println("Error Client workload is null can't start workers");
+	// System.exit(0);
+	// }
+	//
+	// MyMeasurement.resetMeasurement();
+	// System.out.println("\nAfter init: " + new Date());
+	// }
+	// } catch (Exception e) {
+	// e.printStackTrace(System.out);
+	// System.out.println(EXECUTIONDONEMSG);
+	// return;
+	// }
 	//
 	//
 	//
 	//
-	//		System.out.println("Connected");
 	//
-	//		// keep a thread of the worker client threads
-	//		//		Vector<Thread> threads = new Vector<Thread>();
-	//		//		if (inputArguments[dotransactions]) {
-	//		//			String line = "";
-	//		//			// wait till you get the start message from the coordinator
-	//		//			if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT))) 
-	//		//			{
-	//		//				if(!housekeepingBeforeRunningBG(threadCount, outpS, inSS)) {
-	//		//					return;
-	//		//				}
-	//		//			} 
-	//		//			else if (threadCount == 0) {
-	//		//				System.out.println("Invalid thread count: 0, system exiting");
-	//		//				System.out.println(EXECUTIONDONEMSG);
-	//		//				return;
-	//		//			}
-	//		//
-	//		//			if(!performTransactions(dbname, props, inputArguments[dotransactions], inputArguments[status], threadCount, outpS, inSS, monitoringTime, maxExecutionTime, targetperthreadperms, threads)) {
-	//		//				return;
-	//		//			}
-	//		//		} 
-	//		//		else {
-	//		//			DB db = null;
-	//		//			if (inputArguments[doStats]) {
-	//		//				executeDoStats(dbname, props);
-	//		//			} else if (inputArguments[doTestDB]) {
-	//		//				executeDoTestDB(dbname, props);
-	//		//			}else if (inputArguments[doReset]){
-	//		//				executeDoReset(props, classLoader);
-	//		//			}else if (inputArguments[doSchema]) {
-	//		//				executeDoSchema(dbname, props, inputArguments, doDropUpdates);
-	//		//			} else {
-	//		//				if(!executeDoLoad(dbname, props, inputArguments[dotransactions], inputArguments[doIndex], inputArguments[doLoadFriends], targetperthreadperms, classLoader)){
-	//		//					return;
-	//		//				}
-	//		//			}
-	//		//		}
-	//		//System.exit(0);
+	// warningthread.interrupt();
+	//
+	// int numWarmpup = 0;
+	// if ((numWarmpup = Integer.parseInt(props.getProperty(WARMUP_OP_PROPERTY,
+	// WARMUP_OP_PROPERTY_DEFAULT))) != 0
+	// && inputArguments[dotransactions]) {
+	// warmupPhase(dbname, props, inputArguments[dotransactions], threadCount,
+	// targetperthreadperms, numWarmpup);
+	// // we do not want the measurement for warmup to be counted in the
+	// // overall measurements
+	// MyMeasurement.resetMeasurement();
+	// System.out.println("\nAfter warmup: " + new Date());
+	// }// end warmup
 	//
 	//
-	//		//		System.out.println(EXECUTIONDONEMSG);
-	//		//		System.out.println("SHUTDOWN!!!");
-	//	}
+	//
+	//
+	// System.out.println("Connected");
+	//
+	// // keep a thread of the worker client threads
+	// // Vector<Thread> threads = new Vector<Thread>();
+	// // if (inputArguments[dotransactions]) {
+	// // String line = "";
+	// // // wait till you get the start message from the coordinator
+	// // if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY,
+	// RATING_MODE_PROPERTY_DEFAULT)))
+	// // {
+	// // if(!housekeepingBeforeRunningBG(threadCount, outpS, inSS)) {
+	// // return;
+	// // }
+	// // }
+	// // else if (threadCount == 0) {
+	// // System.out.println("Invalid thread count: 0, system exiting");
+	// // System.out.println(EXECUTIONDONEMSG);
+	// // return;
+	// // }
+	// //
+	// // if(!performTransactions(dbname, props, inputArguments[dotransactions],
+	// inputArguments[status], threadCount, outpS, inSS, monitoringTime,
+	// maxExecutionTime, targetperthreadperms, threads)) {
+	// // return;
+	// // }
+	// // }
+	// // else {
+	// // DB db = null;
+	// // if (inputArguments[doStats]) {
+	// // executeDoStats(dbname, props);
+	// // } else if (inputArguments[doTestDB]) {
+	// // executeDoTestDB(dbname, props);
+	// // }else if (inputArguments[doReset]){
+	// // executeDoReset(props, classLoader);
+	// // }else if (inputArguments[doSchema]) {
+	// // executeDoSchema(dbname, props, inputArguments, doDropUpdates);
+	// // } else {
+	// // if(!executeDoLoad(dbname, props, inputArguments[dotransactions],
+	// inputArguments[doIndex], inputArguments[doLoadFriends], targetperthreadperms,
+	// classLoader)){
+	// // return;
+	// // }
+	// // }
+	// // }
+	// //System.exit(0);
+	//
+	//
+	// // System.out.println(EXECUTIONDONEMSG);
+	// // System.out.println("SHUTDOWN!!!");
+	// }
 
 	class InitThread implements Runnable {
 		ClientThread clientThread;
-		InitThread(Thread t){
-			clientThread=(ClientThread)t;
+
+		InitThread(Thread t) {
+			clientThread = (ClientThread) t;
 
 		}
-		public void run(){
-			boolean started=clientThread.initThread();
-			while(!started){
+
+		public void run() {
+			boolean started = clientThread.initThread();
+			while (!started) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace(System.out);
 				}
-				started=clientThread.initThread();
+				started = clientThread.initThread();
 
 			}
 		}
@@ -1324,11 +1338,12 @@ public class Client {
 
 	// public static void main(String[] args) {
 	public void runBG(String[] args, Socket listenerConnection) {
+		System.out.println("Entering runBG method");
 		String dbname;
 		Properties props = new Properties();
 		Properties fileprops = new Properties();
-		//Enums & map of enum,obj
-		boolean[] inputArguments = {true, false, false, false, false, false, false, false, false};
+		// Enums & map of enum,obj
+		boolean[] inputArguments = { true, false, false, false, false, false, false, false, false };
 
 		final int dotransactions = 0;
 		final int doSchema = 1;
@@ -1349,13 +1364,14 @@ public class Client {
 			return;
 		}
 
-		readCmdArgs(args,props, inputArguments, fileprops);
+		readCmdArgs(args, props, inputArguments, fileprops);
 
-		//establish socket connection
+		// establish socket connection
 		PrintWriter outpS = null;
 		Scanner inSS = null;
-		if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT)) == true && inputArguments[dotransactions]) {
-			Object[] printerScanner = establishSocketConnection(listenerConnection,props);
+		if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT)) == true
+				&& inputArguments[dotransactions]) {
+			Object[] printerScanner = establishSocketConnection(listenerConnection, props);
 			outpS = (PrintWriter) printerScanner[0];
 			inSS = (Scanner) printerScanner[1];
 		}
@@ -1369,7 +1385,8 @@ public class Client {
 
 		props = fileprops;
 
-		if (!checkRequiredProperties(props, inputArguments[dotransactions], inputArguments[doSchema], inputArguments[doTestDB],
+		if (!checkRequiredProperties(props, inputArguments[dotransactions], inputArguments[doSchema],
+				inputArguments[doTestDB],
 				inputArguments[doStats])) {
 			System.out.println(EXECUTIONDONEMSG);
 			return;
@@ -1377,106 +1394,115 @@ public class Client {
 		Vector<Thread> threads = new Vector<Thread>();
 		machineid = Integer.parseInt(props.getProperty(MACHINE_ID_PROPERTY,
 				MACHINE_ID_PROPERTY_DEFAULT));
+		System.out.println("machineid set to: " + machineid);
+
 		numBGClients = Integer.parseInt(props.getProperty(NUM_BG_PROPERTY,
 				NUM_BG_PROPERTY_DEFAULT));
+		System.out.println("numBGClients set to: " + numBGClients);
+
 		logDir = props.getProperty(Client.LOG_DIR_PROPERTY, Client.LOG_DIR_PROPERTY_DEFAULT);
-		threadCount = Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY,THREAD_CNT_PROPERTY_DEFAULT));
-		BGServer bb=null;
-		threadsStart= new CountDownLatch(threadCount);
+		System.out.println("logDir set to: " + logDir);
+
+		threadCount = Integer.parseInt(props.getProperty(THREAD_CNT_PROPERTY, THREAD_CNT_PROPERTY_DEFAULT));
+		System.out.println("threadCount set to: " + threadCount);
+
+		BGServer bb = null;
+		threadsStart = new CountDownLatch(threadCount);
 		if (inputArguments[dotransactions]) {
 			threadCount = threadCountForTransactions(props, threadCount);
-			String benchmarkMode=props.getProperty(BENCHMARKING_MODE_PROPERTY,BENCHMARKING_MODE_PROPERTY_DEFAULT);
-			boolean hybrid=false;
-			boolean hybridWithCommunication=false;
-			if (benchmarkMode.equalsIgnoreCase("retain")){
-				BENCHMARKING_MODE=RETAIN;
+			String benchmarkMode = props.getProperty(BENCHMARKING_MODE_PROPERTY, BENCHMARKING_MODE_PROPERTY_DEFAULT);
+			boolean hybrid = false;
+			boolean hybridWithCommunication = false;
+			if (benchmarkMode.equalsIgnoreCase("retain")) {
+				BENCHMARKING_MODE = RETAIN;
 				System.out.println("Running BG in Non-Partitioned (Retain) mode");
-			}
-			else if (benchmarkMode.equalsIgnoreCase("delegate")){
+			} else if (benchmarkMode.equalsIgnoreCase("delegate")) {
 				System.out.println("Running BG in Non-Partitioned (Delegate) mode");
-				BENCHMARKING_MODE=DELEGATE;
-			}
-			else if (benchmarkMode.contains("hybrid")){
-				hybrid=true;
-				boolean uniqueSocilites =Boolean.parseBoolean(props.getProperty(CoreWorkload.LOCK_READS_PROPERTY,Boolean.toString(CoreWorkload.lockReads) ));
-				boolean enablelogging=Boolean.parseBoolean(props.getProperty(CoreWorkload.ENABLE_LOGGING_PROPERTY,Boolean.toString(CoreWorkload.enableLogging) ));
+				BENCHMARKING_MODE = DELEGATE;
+			} else if (benchmarkMode.contains("hybrid")) {
+				hybrid = true;
+				boolean uniqueSocilites = Boolean.parseBoolean(
+						props.getProperty(CoreWorkload.LOCK_READS_PROPERTY, Boolean.toString(CoreWorkload.lockReads)));
+				boolean enablelogging = Boolean.parseBoolean(props.getProperty(CoreWorkload.ENABLE_LOGGING_PROPERTY,
+						Boolean.toString(CoreWorkload.enableLogging)));
 
-				if (numBGClients >1 && (uniqueSocilites || enablelogging)  ){
-					hybridWithCommunication=true;
+				if (numBGClients > 1 && (uniqueSocilites || enablelogging)) {
+					hybridWithCommunication = true;
 				}
-				if (benchmarkMode.contains("delegate")){
+				if (benchmarkMode.contains("delegate")) {
 					System.out.println("Running BG in Hybrid (Delegate) mode");
-					BENCHMARKING_MODE=HYBRID_DELEGATE;
-				}
-				else
-				{
-					BENCHMARKING_MODE=HYBRID_RETAIN;
+					BENCHMARKING_MODE = HYBRID_DELEGATE;
+				} else {
+					BENCHMARKING_MODE = HYBRID_RETAIN;
 					System.out.println("Running BG in Hybrid (Retain) mode");
 				}
-			}
-			else{
-				BENCHMARKING_MODE=PARTITIONED;
+			} else {
+				BENCHMARKING_MODE = PARTITIONED;
 				System.out.println("Running BG in Partitioned mode");
 			}
 
-
-			if(numBGClients==1 || BENCHMARKING_MODE==PARTITIONED || (hybrid && !hybridWithCommunication) ){
-				numMembers=Integer.parseInt(props.getProperty(Client.USER_COUNT_PROPERTY,USER_COUNT_PROPERTY_DEFAULT));
-				BGServer.NumWorkerThreads=0;
+			if (numBGClients == 1 || BENCHMARKING_MODE == PARTITIONED || (hybrid && !hybridWithCommunication)) {
+				numMembers = Integer
+						.parseInt(props.getProperty(Client.USER_COUNT_PROPERTY, USER_COUNT_PROPERTY_DEFAULT));
+				BGServer.NumWorkerThreads = 0;
 
 			}
-			if (BENCHMARKING_MODE== RETAIN || BENCHMARKING_MODE== DELEGATE || (hybrid&&hybridWithCommunication)  )
-			{
+			if (BENCHMARKING_MODE == RETAIN || BENCHMARKING_MODE == DELEGATE || (hybrid && hybridWithCommunication)) {
 				// Start YAZ Server Code
 
-
-				if (numBGClients>1)  
-				{
-					if (props.getProperty(Client.CLIENTS_INFO_PROPERTY)==null ||(props.getProperty(Client.NUM_MEMBERS_PROPERTY)==null && !hybrid)  )
-					{
+				if (numBGClients > 1) {
+					if (props.getProperty(Client.CLIENTS_INFO_PROPERTY) == null
+							|| (props.getProperty(Client.NUM_MEMBERS_PROPERTY) == null && !hybrid)) {
 						System.out.println("Argument is missing. Number of members and Client Info are required");
 						System.exit(0);
 					}
-					if (props.getProperty(NUM_MEMBERS_PROPERTY)!=null){
-						numMembers=Integer.parseInt(props.getProperty(NUM_MEMBERS_PROPERTY));
+					if (props.getProperty(NUM_MEMBERS_PROPERTY) != null) {
+						numMembers = Integer.parseInt(props.getProperty(NUM_MEMBERS_PROPERTY));
 					}
-					int numSockets=threadCount*2;
-					if (props.getProperty(NUM_SOCKETS_PROPERTY)!=null)
-						numSockets=Integer.parseInt(props.getProperty(NUM_SOCKETS_PROPERTY));
+					int numSockets = threadCount * 2;
+					if (props.getProperty(NUM_SOCKETS_PROPERTY) != null)
+						numSockets = Integer.parseInt(props.getProperty(NUM_SOCKETS_PROPERTY));
 
-					ConcurrentHashMap<Integer, ClientInfo> ClientInfoMap=PopulateClientInfo(props.getProperty(Client.CLIENTS_INFO_PROPERTY),Client.numBGClients);
+					ConcurrentHashMap<Integer, ClientInfo> ClientInfoMap = PopulateClientInfo(
+							props.getProperty(Client.CLIENTS_INFO_PROPERTY), Client.numBGClients);
 
-					//		
-					bb = new BGServer(machineid,numBGClients,numMembers,0,ClientInfoMap, 0,numSockets);
-
+					//
+					bb = new BGServer(machineid, numBGClients, numMembers, 0, ClientInfoMap, 0, numSockets);
 
 				}
-				//			else
-				//			{ // one BGClient
-				//				
-				//			}
+				// else
+				// { // one BGClient
+				//
+				// }
 				// End Yaz Server code
-				if (BENCHMARKING_MODE== RETAIN || BENCHMARKING_MODE== DELEGATE || (hybrid&&hybridWithCommunication)  )
-				{
-					if (numBGClients>1 ){
-						// pass props and outps to handler which are needed for validation and determining the db client to shutdown the cache
-						RequestHandler.setValidationInfo(props,outpS,threads);
+				if (BENCHMARKING_MODE == RETAIN || BENCHMARKING_MODE == DELEGATE
+						|| (hybrid && hybridWithCommunication)) {
+					if (numBGClients > 1) {
+						// pass props and outps to handler which are needed for validation and
+						// determining the db client to shutdown the cache
+						RequestHandler.setValidationInfo(props, outpS, threads);
 					}
 				}
 			}
 
-
-		}
-		else {
-			threadCount = threadCountForNoTransactions(props, inputArguments, doSchema, doTestDB, doStats, doReset, threadCount);
+		} else {
+			threadCount = threadCountForNoTransactions(props, inputArguments, doSchema, doTestDB, doStats, doReset,
+					threadCount);
 		}
 
 		// target and db
-		int monitoringTime = Integer.parseInt(props.getProperty(MONITOR_DURATION_PROPERTY, MONITOR_DURATION_PROPERTY_DEFAULT));
+		int monitoringTime = Integer
+				.parseInt(props.getProperty(MONITOR_DURATION_PROPERTY, MONITOR_DURATION_PROPERTY_DEFAULT));
+		System.out.println("monitoringTime set to: " + monitoringTime);
+
 		long maxExecutionTime = Integer.parseInt(props.getProperty(MAX_EXECUTION_TIME, MAX_EXECUTION_TIME_DEFAULT));
-		System.out.println("*****max execution time specified : " + maxExecutionTime);
+		System.out.println("maxExecutionTime set to: " + maxExecutionTime);
+
 		dbname = props.getProperty(DB_CLIENT_PROPERTY, DB_CLIENT_PROPERTY_DEFAULT);
+		System.out.println("dbname set to: " + dbname);
+
 		target = Integer.parseInt(props.getProperty(TARGET__PROPERTY, TARGET_PROPERTY_DEFAULT));
+		System.out.println("target set to: " + target);
 
 		// compute the target throughput
 		double targetperthreadperms = -1;
@@ -1489,10 +1515,11 @@ public class Client {
 		// show a warning message that creating the workload is taking a while
 		// but only do so if it is taking longer than 2 seconds
 		// (showing the message right away if the setup wasn't taking very long
-		// was confusing people).	
+		// was confusing people).
 
 		Thread warningthread = new Thread() {
 			public void run() {
+				System.out.println("Entering the run method inside runBG method of Client class");
 				try {
 					sleep(2000);
 				} catch (InterruptedException e) {
@@ -1500,9 +1527,11 @@ public class Client {
 					return;
 				}
 				System.out.println(" (might take a few minutes for large data sets)");
+				System.out.println("Exiting the run method inside runBG method of Client class");
 			}
 		};
 
+		System.out.println("Starting warning thread inside runBG method of Client class");
 		warningthread.start();
 
 		System.out.println();
@@ -1519,25 +1548,22 @@ public class Client {
 			if (inputArguments[dotransactions]) {
 				// check to see if the sum of all activity and action
 				// proportions are 1
-				if(!isTotalProbabilityOne(props)){
-					return;	
+				if (!isTotalProbabilityOne(props)) {
+					return;
 				}
 
 				initializeDB(dbname, props, classLoader);
-				if (inputArguments[dotransactions]&& numBGClients > 1 && bb != null) {
+				if (inputArguments[dotransactions] && numBGClients > 1 && bb != null) {
 					BGServer.initializeWorkers(dbname, props);
 				}
 
-				if (Client.workload!=null)
-				{ // release workers, so they can start servicing requests 
+				if (Client.workload != null) { // release workers, so they can start servicing requests
 					releaseWorkers.release(BGServer.NumWorkerThreads);
-					//					for (int i=0;i<BGServer.NumSemaphores;i++)
-					//					{
-					//						BGServer.semaphoreMonitorThreads[i].start();
-					//					}
-				}
-				else
-				{
+					// for (int i=0;i<BGServer.NumSemaphores;i++)
+					// {
+					// BGServer.semaphoreMonitorThreads[i].start();
+					// }
+				} else {
 					System.out.println("Error Client workload is null can't start workers");
 					System.exit(0);
 				}
@@ -1550,82 +1576,98 @@ public class Client {
 			System.out.println(EXECUTIONDONEMSG);
 			return;
 		}
-		
+
 		warningthread.interrupt();
 
 		int numWarmpup = 0;
 		if ((numWarmpup = Integer.parseInt(props.getProperty(WARMUP_OP_PROPERTY, WARMUP_OP_PROPERTY_DEFAULT))) != 0
 				&& inputArguments[dotransactions]) {
+			System.out.println("Starting warmup phase with " + numWarmpup + " operations in Client.java runBG method");
 			warmupPhase(dbname, props, inputArguments[dotransactions], threadCount, targetperthreadperms, numWarmpup);
 			// we do not want the measurement for warmup to be counted in the
 			// overall measurements
 			MyMeasurement.resetMeasurement();
 			System.out.println("\nAfter warmup: " + new Date());
-		}// end warmup
+		} // end warmup
 
 		System.out.println("Connected");
-		if (CoreWorkload.commandLineMode==false || (CoreWorkload.commandLineMode==true && CoreWorkload.enableLogging==true))
-		{ // if enableLogging and commandline mode must create threads to generate log records
-			// keep a thread of the worker client threads
+		if (CoreWorkload.commandLineMode == false
+				|| (CoreWorkload.commandLineMode == true && CoreWorkload.enableLogging == true)) { // if enableLogging
+																									// and commandline
+																									// mode must create
+																									// threads to
+																									// generate log
+																									// records
+																									// keep a thread of
+																									// the worker client
+																									// threads
 
 			if (inputArguments[dotransactions]) {
+				System.out.println("Entering the if block for dotransactions inside runBG method of Client class");
 				String line = "";
 				// wait till you get the start message from the coordinator
-				if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT))) 
-				{
-					if(!housekeepingBeforeRunningBG(threadCount, outpS, inSS)) {
+				if (Boolean.parseBoolean(props.getProperty(RATING_MODE_PROPERTY, RATING_MODE_PROPERTY_DEFAULT))) {
+					if (!housekeepingBeforeRunningBG(threadCount, outpS, inSS)) {
 						return;
 					}
-				} 
-				else if (threadCount == 0) {
+				} else if (threadCount == 0) {
 					System.out.println("Invalid thread count: 0, system exiting");
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 
-				if(!performTransactions(dbname, props, inputArguments[dotransactions], inputArguments[status], threadCount, outpS, inSS, monitoringTime, maxExecutionTime, targetperthreadperms, threads)) {
+				if (!performTransactions(dbname, props, inputArguments[dotransactions], inputArguments[status],
+						threadCount, outpS, inSS, monitoringTime, maxExecutionTime, targetperthreadperms, threads)) {
 					return;
 				}
-			} 
-			else {
+			} else {
+				System.out.println("Entering the else block for dotransactions inside runBG method of Client class");
 				DB db = null;
 				if (inputArguments[doStats]) {
+					System.out.println("Executing doStats inside runBG method of Client class");
 					executeDoStats(dbname, props);
 				} else if (inputArguments[doTestDB]) {
+					System.out.println("Executing doTestDB inside runBG method of Client class");
 					executeDoTestDB(dbname, props);
-				}else if (inputArguments[doReset]){
+				} else if (inputArguments[doReset]) {
+					System.out.println("Executing doReset inside runBG method of Client class");
 					executeDoReset(props, classLoader);
-				}else if (inputArguments[doSchema]) {
+				} else if (inputArguments[doSchema]) {
+					System.out.println("Executing doSchema inside runBG method of Client class");
 					executeDoSchema(dbname, props, inputArguments, doDropUpdates);
 				} else {
-					if(!executeDoLoad(dbname, props, inputArguments[dotransactions], inputArguments[doIndex], inputArguments[doLoadFriends], targetperthreadperms, classLoader)){
+					if (!executeDoLoad(dbname, props, inputArguments[dotransactions], inputArguments[doIndex],
+							inputArguments[doLoadFriends], targetperthreadperms, classLoader)) {
+						System.out.println("Exiting runBG method of Client class due to executeDoLoad failure");
 						return;
 					}
 				}
 			}
-			//System.exit(0);
-
+			// System.exit(0);
 
 			System.out.println(EXECUTIONDONEMSG);
 			System.out.println(Client.SHUTDOWNMSG);
-//			if (dbname.contains("JdbcDBClient_KOSAR")&&(numBGClients == 1 || BENCHMARKING_MODE == PARTITIONED || BENCHMARKING_MODE==HYBRID_DELEGATE || BENCHMARKING_MODE==HYBRID_RETAIN)) {
-//
-//				KosarSoloDriver.closeSockets();
-//			}
+			// if (dbname.contains("JdbcDBClient_KOSAR")&&(numBGClients == 1 ||
+			// BENCHMARKING_MODE == PARTITIONED || BENCHMARKING_MODE==HYBRID_DELEGATE ||
+			// BENCHMARKING_MODE==HYBRID_RETAIN)) {
+			//
+			// KosarSoloDriver.closeSockets();
+			// }
 
-//			if ((dbname.toLowerCase().contains("kosar"))
-//					&& CoreClient.enableCache
-//					&& (numBGClients == 1 || BENCHMARKING_MODE == PARTITIONED) 
-//					|| BENCHMARKING_MODE == HYBRID_DELEGATE 
-//					|| BENCHMARKING_MODE == HYBRID_RETAIN) {
-//				try {
-//					AsyncSocketServer.shutdown();
-//				} catch (Exception e) {
-//					e.printStackTrace(System.out);
-//				}
-//			}
+			// if ((dbname.toLowerCase().contains("kosar"))
+			// && CoreClient.enableCache
+			// && (numBGClients == 1 || BENCHMARKING_MODE == PARTITIONED)
+			// || BENCHMARKING_MODE == HYBRID_DELEGATE
+			// || BENCHMARKING_MODE == HYBRID_RETAIN) {
+			// try {
+			// AsyncSocketServer.shutdown();
+			// } catch (Exception e) {
+			// e.printStackTrace(System.out);
+			// }
+			// }
 
 		}
+		System.out.println("Exiting runBG method of Client class");
 	}
 
 	/**
@@ -1639,7 +1681,8 @@ public class Client {
 	 * @param classLoader
 	 * @return false if exceptions => forced returns else true
 	 */
-	private boolean executeDoLoad(String dbname, Properties props, boolean dotransactions,boolean doIndex, boolean doLoadFriends, double targetperthreadperms, ClassLoader classLoader) {
+	private boolean executeDoLoad(String dbname, Properties props, boolean dotransactions, boolean doIndex,
+			boolean doLoadFriends, double targetperthreadperms, ClassLoader classLoader) {
 		Workload userWorkload;
 		Workload friendshipWorkload;
 		Workload resourceWorkload;
@@ -1668,18 +1711,19 @@ public class Client {
 						Integer.parseInt(props.getProperty(
 								USER_COUNT_PROPERTY,
 								USER_COUNT_PROPERTY_DEFAULT)),
-								Integer.parseInt(props.getProperty(
-										NUM_BG_PROPERTY,
-										NUM_BG_PROPERTY_DEFAULT)),
-										Integer.parseInt(props.getProperty(
-												MACHINE_ID_PROPERTY,
-												MACHINE_ID_PROPERTY_DEFAULT)),
-												props.getProperty(PROBS_PROPERTY,
-														PROBS_PROPERTY_DEFAULT),
-														Double.parseDouble(props
-																.getProperty(
-																		CoreWorkload.ZIPF_MEAN_PROPERTY,
-																		CoreWorkload.ZIPF_MEAN_PROPERTY_DEFAULT)),true);
+						Integer.parseInt(props.getProperty(
+								NUM_BG_PROPERTY,
+								NUM_BG_PROPERTY_DEFAULT)),
+						Integer.parseInt(props.getProperty(
+								MACHINE_ID_PROPERTY,
+								MACHINE_ID_PROPERTY_DEFAULT)),
+						props.getProperty(PROBS_PROPERTY,
+								PROBS_PROPERTY_DEFAULT),
+						Double.parseDouble(props
+								.getProperty(
+										CoreWorkload.ZIPF_MEAN_PROPERTY,
+										CoreWorkload.ZIPF_MEAN_PROPERTY_DEFAULT)),
+						true);
 				int[] myMembers = createFrags.getMyMembers();
 				useropcount = myMembers.length;
 				useroffset = Integer.parseInt(props.getProperty(
@@ -1719,8 +1763,8 @@ public class Client {
 			// verify fragment size related to friendships
 			if (useropcount < friendshipopcount + 1) {
 				System.out
-				.println("Fragment size is too small, can't create appropriate friendships. exiting.");
-				//System.exit(0);
+						.println("Fragment size is too small, can't create appropriate friendships. exiting.");
+				// System.exit(0);
 				System.out.println(EXECUTIONDONEMSG);
 				return false;
 			}
@@ -1730,7 +1774,7 @@ public class Client {
 						+ " so loading with 1 thread");
 				numLoadThreads = 1;
 			}
-			workload = null; //every time load happens the workload left from prev executions should reset
+			workload = null; // every time load happens the workload left from prev executions should reset
 
 			int numUserThreadOps = 0;
 			numUserThreadOps = useropcount / numLoadThreads;
@@ -1764,7 +1808,8 @@ public class Client {
 						threadMembers.add(allMembers.get(u));
 					}
 					userWorkload.init(tprop, threadMembers);
-					Thread t = new ClientThread(db, dotransactions, userWorkload, j, 1, tprop, numUserThreadOps + addUserCnt, targetperthreadperms, true);
+					Thread t = new ClientThread(db, dotransactions, userWorkload, j, 1, tprop,
+							numUserThreadOps + addUserCnt, targetperthreadperms, true);
 					loadThreads.add((ClientThread) t);
 					((ClientThread) t).initThread();
 					t.start();
@@ -1800,7 +1845,7 @@ public class Client {
 					}
 					friendshipWorkload.init(tprop, threadMembers);
 					Thread t = new ClientThread(
-							db, dotransactions, friendshipWorkload, j, 1, tprop, 
+							db, dotransactions, friendshipWorkload, j, 1, tprop,
 							((numUserThreadOps + addUserCnt) * friendshipopcount),
 							targetperthreadperms, true);
 
@@ -1841,7 +1886,7 @@ public class Client {
 						Thread t = new ClientThread(db, dotransactions,
 								resourceWorkload, j, 1, tprop,
 								(numUserThreadOps + addUserCnt)
-								* resourceopcount,
+										* resourceopcount,
 								targetperthreadperms, true);
 						loadThreads.add((ClientThread) t);
 						((ClientThread) t).initThread();
@@ -1860,7 +1905,7 @@ public class Client {
 					db.cleanup(true);
 				}
 				System.out
-				.println("Done creating indexes and closing db connection");
+						.println("Done creating indexes and closing db connection");
 			}
 			dbglob.cleanup(false);
 			loadEnd = System.currentTimeMillis();
@@ -1888,16 +1933,20 @@ public class Client {
 			userWorkload.init(props, null);
 			text += "\t MemberCount="
 					+ userWorkload.getDBInitialStats(db).get(
-							USERCOUNT) + "\n";
+							USERCOUNT)
+					+ "\n";
 			text += "\t ResourceCountPerUser="
 					+ userWorkload.getDBInitialStats(db).get(
-							RESOURCES_PER_USER) + "\n";
+							RESOURCES_PER_USER)
+					+ "\n";
 			text += "\t FriendCountPerUser="
 					+ userWorkload.getDBInitialStats(db).get(
-							AVG_FRNDS_PER_USER) + "\n";
+							AVG_FRNDS_PER_USER)
+					+ "\n";
 			text += "\t PendingCountPerUser="
 					+ userWorkload.getDBInitialStats(db).get(
-							AVG_PENDING_PER_USER) + "\n";
+							AVG_PENDING_PER_USER)
+					+ "\n";
 			db.cleanup(false);
 			System.out.println("Done doing load sanity check");
 
@@ -1936,13 +1985,13 @@ public class Client {
 				System.out.println("Dropping friendships and manipulations...");
 				db.reconstructSchema();
 				System.out
-				.println("Dropping friendhsips and manipulations was successful...");
+						.println("Dropping friendhsips and manipulations was successful...");
 			} else {
 				System.out.println("Creating data store schema...");
 				db.createSchema(props);
 				System.out.println("Schema creation was successful");
 			}
-//			db.cleanup(false);
+			// db.cleanup(false);
 		} catch (UnknownDBException e) {
 			e.printStackTrace(System.out);
 		} catch (DBException e) {
@@ -1962,7 +2011,7 @@ public class Client {
 			workload.cleanup();
 			workload = (Workload) workloadclass.newInstance();
 			workload.init(props, null);
-			workload.resetDBInternalStructures(props, BGMainClass.exeMode );
+			workload.resetDBInternalStructures(props, BGMainClass.exeMode);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (WorkloadException e) {
@@ -1982,15 +2031,15 @@ public class Client {
 		DB db;
 		try {
 			System.out
-			.println("Creating connection to the data store...");
+					.println("Creating connection to the data store...");
 			db = DBFactory.newDB(dbname, props);
 			boolean connState = db.init();
-//			db.cleanup(true);
+			// db.cleanup(true);
 			if (connState)
 				System.out.println("connection was successful");
 			else
 				System.out
-				.println("There was an error creating connection to the data store server.");
+						.println("There was an error creating connection to the data store server.");
 		} catch (UnknownDBException e) {
 			e.printStackTrace(System.out);
 		} catch (DBException e) {
@@ -2006,7 +2055,7 @@ public class Client {
 		DB db;
 		try {
 			System.out
-			.println("Querying statistics for the data store...");
+					.println("Querying statistics for the data store...");
 			db = DBFactory.newDB(dbname, props);
 			db.init();
 			HashMap<String, String> initStats = db.getInitialStats();
@@ -2020,7 +2069,7 @@ public class Client {
 			}
 			str += "}\n";
 			System.out.println(str);
-//			db.cleanup(true);
+			// db.cleanup(true);
 			System.out.println("Query stats completed");
 		} catch (UnknownDBException e) {
 			e.printStackTrace(System.out);
@@ -2050,15 +2099,23 @@ public class Client {
 			int monitoringTime, long maxExecutionTime,
 			double targetperthreadperms, Vector<Thread> threads) {
 		// run the workload
+
+		System.out.println("Entering performTransactions method of Client class");
 		System.out.println("Starting benchmark.");
 
 		int opcount = Integer.parseInt(props.getProperty(OPERATION_COUNT_PROPERTY,
 				OPERATION_COUNT_PROPERTY_DEFAULT));
+		System.out.println("opcount set to: " + opcount);
+		System.out.println("Deafult opcount set to: "
+				+ OPERATION_COUNT_PROPERTY_DEFAULT);
+
 		String simType = props.getProperty(
 				SIMTYPE_PROPERTY, SIMTYPE_PROPERTY_DEFAULT);
+		System.out.println("simType set to: " + simType);
+		System.out.println("Default simType set to: "
+				+ SIMTYPE_PROPERTY_DEFAULT);
 
-		if(simType.equalsIgnoreCase("open"))
-		{
+		if (simType.equalsIgnoreCase("open")) {
 			DB db = null;
 
 			double lambda = Double.parseDouble(props.getProperty(
@@ -2076,16 +2133,38 @@ public class Client {
 				System.exit(0);
 			}
 
-			Distribution distriThread = new Distribution(db, dotransactions, workload, 1, 1, props, opcount, targetperthreadperms, 
+			System.out.println(
+					"Creating Distribution with params: " +
+							"db=" + db +
+							", dotransactions=" + dotransactions +
+							", workload=" + workload +
+							", threadId=1" +
+							", numThreads=1" +
+							", props=" + props +
+							", opcount=" + opcount +
+							", targetperthreadperms=" + targetperthreadperms +
+							", false" +
+							", lambda=" + lambda +
+							", maxExecutionTime=" + maxExecutionTime +
+							", simWarmupTime=" + simWarmupTime +
+							", distriType=" + distriType);
+
+			Distribution distriThread = new Distribution(db, dotransactions, workload, 1, 1, props, opcount,
+					targetperthreadperms,
 					false, lambda, maxExecutionTime, simWarmupTime, distriType);
 
-			//distriThread added
+			Distribution distriThread = new Distribution(db, dotransactions, workload, 1, 1, props, opcount,
+					targetperthreadperms,
+					false, lambda, maxExecutionTime, simWarmupTime, distriType);
+
+			// distriThread added
 			threads.add(distriThread);
 
-			//start time noted
-			//st = System.currentTimeMillis();
+			// start time noted
+			// st = System.currentTimeMillis();
 
-			//distri initThread just initializes workload_state; db.init called on each Worker only
+			// distri initThread just initializes workload_state; db.init called on each
+			// Worker only
 			boolean started = false;
 			started = distriThread.initThread();
 			while (!started) {
@@ -2096,8 +2175,7 @@ public class Client {
 				}
 			}
 
-		}
-		else{
+		} else {
 
 			for (int threadid = 0; threadid < threadCount; threadid++) {
 				DB db = null;
@@ -2105,7 +2183,7 @@ public class Client {
 					db = DBFactory.newDB(dbname, props);
 				} catch (UnknownDBException e) {
 					System.out.println("Unknown DB " + dbname);
-					//System.exit(0);
+					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return false;
 				}
@@ -2117,7 +2195,7 @@ public class Client {
 				threads.add(t);
 			}
 
-			//st = System.currentTimeMillis();
+			// st = System.currentTimeMillis();
 
 			// initialize all threads before they start issuing requests - ramp
 			// up
@@ -2150,10 +2228,10 @@ public class Client {
 		}
 
 		// visual
-		VisualizationThread visual= new VisualizationThread(Client.visualizerPort,statusthread);
+		VisualizationThread visual = new VisualizationThread(Client.visualizerPort, statusthread);
 		visual.start();
 		System.out.println("Visualizer Port: " + Client.visualizerPort);
-		//if(simType.equalsIgnoreCase("closed")){
+		// if(simType.equalsIgnoreCase("closed")){
 		Thread terminator = null;
 
 		if (maxExecutionTime > 0) {
@@ -2161,17 +2239,18 @@ public class Client {
 					workload);
 			terminator.start();
 		}
-		//}
+		// }
 
 		Thread killThread = null;
 		Thread monitorThread = null;
 		if (monitoringTime > 0) {
 			System.out
-			.println("creating the kill thread which waits for kill msg and once received one it kills the BG client");
+					.println(
+							"creating the kill thread which waits for kill msg and once received one it kills the BG client");
 			killThread = new KillThread(inSS, threads, workload);
-			//	killThread.start();
+			// killThread.start();
 			System.out
-			.println("creating monitoring thread to monitor the performance of the BGClient");
+					.println("creating monitoring thread to monitor the performance of the BGClient");
 			monitorThread = new MonitoringThread(monitoringTime, threads,
 					props, outpS, workload);
 			monitorThread.start();
@@ -2187,11 +2266,10 @@ public class Client {
 		boolean anyDied = false;
 		long firstEn = 0;
 
-		if(simType.equalsIgnoreCase("closed")){
-			//Yaz
+		if (simType.equalsIgnoreCase("closed")) {
+			// Yaz
 			System.out.println("Waiting for threads to finish...");
-			while (!workload.isStopRequested())
-			{
+			while (!workload.isStopRequested()) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -2203,7 +2281,7 @@ public class Client {
 			for (Thread t : threads) {
 				try {
 					t.join();
-					System.out.println("BG Thread "+((ClientThread)t)._threadid+" join");
+					System.out.println("BG Thread " + ((ClientThread) t)._threadid + " join");
 					opsDone += ((ClientThread) t).getOpsDone();
 					actsDone += ((ClientThread) t).getActsDone();
 					// now that one thread has died for fair throughput
@@ -2222,19 +2300,19 @@ public class Client {
 				} catch (InterruptedException e) {
 				}
 			}
-		}else{
+		} else {
 			for (Thread t : threads) {
 				try {
 					t.join();
-					//System.out.println(((Distribution)t)._threadid+" died");
+					// System.out.println(((Distribution)t)._threadid+" died");
 					opsDone += ((Distribution) t).getOpsDone();
 					actsDone += ((Distribution) t).getActsDone();
-					//only one Distribution thread
-					if(!anyDied){
-						//this is the first and last Distribution thread that is completing work
+					// only one Distribution thread
+					if (!anyDied) {
+						// this is the first and last Distribution thread that is completing work
 						firstEn = System.currentTimeMillis();
-						for(Thread t1: threads){
-							allOpsDone +=((Distribution) t1).getOpsDone();
+						for (Thread t1 : threads) {
+							allOpsDone += ((Distribution) t1).getOpsDone();
 							allActsDone += ((Distribution) t1).getActsDone();
 						}
 						anyDied = true;
@@ -2243,9 +2321,10 @@ public class Client {
 				} catch (InterruptedException e) {
 				}
 			}
-			//Need to set the following two for proper calculation of Staleness in Open Simulation
+			// Need to set the following two for proper calculation of Staleness in Open
+			// Simulation
 			props.setProperty(THREAD_CNT_PROPERTY, new Integer(Worker.maxWorker).toString());
-			threadCount=Worker.maxWorker;
+			threadCount = Worker.maxWorker;
 		}
 
 		long en = System.currentTimeMillis();
@@ -2278,47 +2357,44 @@ public class Client {
 
 		System.out.println("\nAfter workload done: " + new Date());
 
-
 		try {
 			workload.cleanup();
 		} catch (WorkloadException e) {
 			e.printStackTrace(System.out);
-			//System.exit(0);
+			// System.exit(0);
 			System.out.println(EXECUTIONDONEMSG);
 			return false;
 		}
-		if ((BENCHMARKING_MODE==RETAIN||BENCHMARKING_MODE==DELEGATE)&& CoreWorkload.enableLogging && numBGClients>1)
-		{
+		if ((BENCHMARKING_MODE == RETAIN || BENCHMARKING_MODE == DELEGATE) && CoreWorkload.enableLogging
+				&& numBGClients > 1) {
 			System.out.println("Computing stats about local and remote actions...");
 			printLocalRemoteActionsStats();
 
-
 		}
-
 
 		ClientDataStats expStat = new ClientDataStats();
 		// if no updates or no reads have taken place , the validation phase
 		// does not happen
-		// if updates happen graph actions are also executed the validation does not happen
+		// if updates happen graph actions are also executed the validation does not
+		// happen
 
-		// pass props and outps to handler which are needed for validation and determining the db client to shutdown the cache
-		//RequestHandler.setValidationInfo(props,outpS);
-		if (CoreWorkload.enableLogging==false)
-		{
+		// pass props and outps to handler which are needed for validation and
+		// determining the db client to shutdown the cache
+		// RequestHandler.setValidationInfo(props,outpS);
+		if (CoreWorkload.enableLogging == false) {
 			System.out.println("Logging is disabled. Validation is not invoked");
 
-		}
-		else
-		{
-			if ( (CoreWorkload.updatesExist && CoreWorkload.readsExist) || ( !CoreWorkload.updatesExist && CoreWorkload.graphActionsExist )  ) {
+		} else {
+			if ((CoreWorkload.updatesExist && CoreWorkload.readsExist)
+					|| (!CoreWorkload.updatesExist && CoreWorkload.graphActionsExist)) {
 				// threadid,listOfSeqs seen by that threadid
-				if(numBGClients==1 || BENCHMARKING_MODE==PARTITIONED){
-					HashMap<Integer, Integer>[] seqTracker = new HashMap[threadCount+BGServer.NumWorkerThreads];
-					HashMap<Integer, Integer>[] staleSeqTracker = new HashMap[threadCount+BGServer.NumWorkerThreads];
+				if (numBGClients == 1 || BENCHMARKING_MODE == PARTITIONED) {
+					HashMap<Integer, Integer>[] seqTracker = new HashMap[threadCount + BGServer.NumWorkerThreads];
+					HashMap<Integer, Integer>[] staleSeqTracker = new HashMap[threadCount + BGServer.NumWorkerThreads];
 					long dumpVTimeE = 0, dumpVTimeS = 0;
 
 					System.out
-					.println("--Discarding, dumping and validation starting.");
+							.println("--Discarding, dumping and validation starting.");
 					dumpVTimeS = System.currentTimeMillis();
 
 					ValidationMainClass.dumpFilesAndValidate(props, seqTracker,
@@ -2326,24 +2402,22 @@ public class Client {
 									LOG_DIR_PROPERTY, LOG_DIR_PROPERTY_DEFAULT));
 					dumpVTimeE = System.currentTimeMillis();
 					System.out
-					.println("******* Discrading, dumping and validation is done."
-							+ (dumpVTimeE - dumpVTimeS));
+							.println("******* Discrading, dumping and validation is done."
+									+ (dumpVTimeE - dumpVTimeS));
 					expStat.setDumpAndValidateTime((double) (dumpVTimeE - dumpVTimeS)); // the dumptime
-				}
-				else
-				{
+				} else {
 					// do validation after workers are done
 
-
 				}
-			}else if(!CoreWorkload.graphActionsExist && !CoreWorkload.updatesExist){
-				System.out.println("Warning: Update and Graph actions not exist in the workload so the validation is not invoked.");
+			} else if (!CoreWorkload.graphActionsExist && !CoreWorkload.updatesExist) {
+				System.out.println(
+						"Warning: Update and Graph actions not exist in the workload so the validation is not invoked.");
 			}
 		}
 		System.out.println("DONE");
 		expStat.setOpsTillFirstDeath((double) allOpsDone);
 		expStat.setActsTillFirstDeath((double) allActsDone);
-		expStat.setTimeTillFirstDeath( (double) (firstEn - experimentStartTime)); // time
+		expStat.setTimeTillFirstDeath((double) (firstEn - experimentStartTime)); // time
 		// it
 		// took
 		// till
@@ -2360,42 +2434,38 @@ public class Client {
 			System.exit(-1);
 		}
 		System.out.println("Executing benchmark is completed.");
+		System.out.println("Exiting performTransactions method of Client class");
 		return true;
 	}
 
 	private void printLocalRemoteActionsStats() {
 		// TODO Auto-generated method stub
-		long numLocalActs=0;
-		long numPartialActs=0;
-		long numPartialOrLocalActs=0;
-		Vector <ActionStatsThread> actionStatusThreads= new Vector<ActionStatsThread>();
-		for (int i=0;i<threadCount;i++)
-		{
+		long numLocalActs = 0;
+		long numPartialActs = 0;
+		long numPartialOrLocalActs = 0;
+		Vector<ActionStatsThread> actionStatusThreads = new Vector<ActionStatsThread>();
+		for (int i = 0; i < threadCount; i++) {
 
-			ActionStatsThread a=new ActionStatsThread(i, logDir, machineid);
+			ActionStatsThread a = new ActionStatsThread(i, logDir, machineid);
 			a.start();
 			actionStatusThreads.add(a);
 		}
-		for(ActionStatsThread t:actionStatusThreads)
-		{
+		for (ActionStatsThread t : actionStatusThreads) {
 			try {
 				t.join();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			numLocalActs+=t.numLocalActs;
-			numPartialActs+=t.numPartialActs;
-			numPartialOrLocalActs+=t.numPartialOrLocalActs;
+			numLocalActs += t.numLocalActs;
+			numPartialActs += t.numPartialActs;
+			numPartialOrLocalActs += t.numPartialOrLocalActs;
 
 		}
 
-
-		System.out.println("Number of local actions:"+numLocalActs);
-		System.out.println("Number of Partially local actions:"+numPartialActs);
-		System.out.println("Number of partial or local actions:"+numPartialOrLocalActs);
-
-
+		System.out.println("Number of local actions:" + numLocalActs);
+		System.out.println("Number of Partially local actions:" + numPartialActs);
+		System.out.println("Number of partial or local actions:" + numPartialOrLocalActs);
 
 	}
 
@@ -2407,6 +2477,8 @@ public class Client {
 	 */
 	private boolean housekeepingBeforeRunningBG(int threadCount,
 			PrintWriter outpS, Scanner inSS) {
+
+		System.out.println("Entering housekeepingBeforeRunningBG in Client.java with threadCount: " + threadCount);
 		String line;
 		if (inSS != null) {
 			while (inSS.hasNext()) {
@@ -2416,7 +2488,7 @@ public class Client {
 				}
 			}
 			System.out
-			.println("BGCLient: Received start simulation msg and will run benchmark");
+					.println("BGCLient: Received start simulation msg and will run benchmark");
 		}
 
 		if (threadCount == 0 && outpS != null) {
@@ -2438,8 +2510,10 @@ public class Client {
 			outpS.flush();
 			System.out.println(EXECUTIONDONEMSG);
 			System.out.println(Client.SHUTDOWNMSG);
+			System.out.println("Exiting Client housekeepingBeforeRunningBG with threadCount: " + threadCount);
 			return false;
 		}
+		System.out.println("Exiting Client housekeepingBeforeRunningBG with threadCount: " + threadCount);
 		return true;
 	}
 
@@ -2457,7 +2531,7 @@ public class Client {
 			boolean dotransactions,
 			int threadcount, double targetperthreadperms, int numWarmpup) {
 		// do the warmup phase
-		boolean customWarmup=true;
+		boolean customWarmup = true;
 		Vector<Thread> warmupThreads = new Vector<Thread>();
 		int numWarmpThread = Integer.parseInt(props.getProperty(
 				WARMUP_THREADS_PROPERTY, WARMUP_THREADS_PROPERTY_DEFAULT));
@@ -2475,20 +2549,20 @@ public class Client {
 					return false;
 				}
 
-				Thread t = new ClientThread(db, dotransactions, workload, threadid, threadcount, props, numWarmpup/numWarmpThread, targetperthreadperms, true);
+				Thread t = new ClientThread(db, dotransactions, workload, threadid, threadcount, props,
+						numWarmpup / numWarmpThread, targetperthreadperms, true);
 				warmupThreads.add(t);
 			}
 			// initialize all threads before they start issuing requests -
 			// ramp up
-			Vector<Thread> initThreads= new Vector<Thread>();
+			Vector<Thread> initThreads = new Vector<Thread>();
 
-
-			int i=0;
+			int i = 0;
 			for (Thread t : warmupThreads) {
-				Thread thread= new Thread(new InitThread(t));
+				Thread thread = new Thread(new InitThread(t));
 				thread.start();
-				if (i%CLIENT_THREADS_INIT_BATCH==0){
-					for ( Thread it: initThreads){
+				if (i % CLIENT_THREADS_INIT_BATCH == 0) {
+					for (Thread it : initThreads) {
 						try {
 							it.join();
 						} catch (InterruptedException e) {
@@ -2501,7 +2575,7 @@ public class Client {
 				i++;
 			}
 
-			for ( Thread it: initThreads){
+			for (Thread it : initThreads) {
 				try {
 					it.join();
 				} catch (InterruptedException e) {
@@ -2510,10 +2584,7 @@ public class Client {
 				}
 			}
 
-
-
-
-			if (!customWarmup){
+			if (!customWarmup) {
 
 				// start all threads
 				for (Thread t : warmupThreads) {
@@ -2534,58 +2605,59 @@ public class Client {
 				}
 				System.out.println("num warmup Ops done (sessions=: "
 						+ warmupOpsDone + ", actions=" + warmupActsDone + ")");
-			}
-			else{
+			} else {
 				System.out.println("Doing Custom Warmup...");
-				ArrayList<CustomWarmupThread> customThreads= new ArrayList<CustomWarmupThread>();
+				ArrayList<CustomWarmupThread> customThreads = new ArrayList<CustomWarmupThread>();
 
 				int start, end;
-				if (numWarmpup > numMembers){
+				if (numWarmpup > numMembers) {
 					numWarmpup = numMembers;
 				}
-				int portion=numWarmpup/numWarmpThread;
-				for (int t=0; t<numWarmpThread;t++){
-					start= ((t+1) *portion)-1;
-					end= t*portion;
-					ClientThread wthread = (ClientThread)warmupThreads.get(t);
-					CustomWarmupThread customW = new CustomWarmupThread(wthread._db, start,end);
+				int portion = numWarmpup / numWarmpThread;
+				for (int t = 0; t < numWarmpThread; t++) {
+					start = ((t + 1) * portion) - 1;
+					end = t * portion;
+					ClientThread wthread = (ClientThread) warmupThreads.get(t);
+					CustomWarmupThread customW = new CustomWarmupThread(wthread._db, start, end);
 					customThreads.add(customW);
-					System.out.println("Starting Warmup thread "+ t +" start="+start +" end="+end+ " portion="+portion);
+					System.out.println(
+							"Starting Warmup thread " + t + " start=" + start + " end=" + end + " portion=" + portion);
 					customW.start();
 
 				}
-				//				ClientThread wthread = (ClientThread)warmupThreads.get(0);
-				//				int nuMembers=200000;
-				//				System.out.println("Starting custom warmup");
-				//				HashMap<String, ByteIterator> result;//= new HashMap<String, ByteIterator>();
-				//				Vector<HashMap<String,ByteIterator>> r;//=new Vector<HashMap<String,ByteIterator>>();
-				//				
-				//				for (int ii=nuMembers; ii>=0;ii--){
-				//					//System.out.println("i="+ii);
-				//					int x=CoreWorkload.myMemberObjs[ii].get_uid();
-				//				//	System.out.println("id="+x);
-				//					result= new HashMap<String, ByteIterator>();
-				//					wthread._db.viewProfile(0, x, result, false, false);
-				//					r=new Vector<HashMap<String,ByteIterator>>();
-				//					wthread._db.listFriends(0, x, null, r, false, false);
-				//					r=new Vector<HashMap<String,ByteIterator>>();
-				//					wthread._db.viewFriendReq(x, r, false, false);
-				//					if (ii%100==0){
-				//						System.out.println("Client "+ Client.machineid+" Done with "+ (nuMembers-ii) +" members");
-				//					}
-				//				}
+				// ClientThread wthread = (ClientThread)warmupThreads.get(0);
+				// int nuMembers=200000;
+				// System.out.println("Starting custom warmup");
+				// HashMap<String, ByteIterator> result;//= new HashMap<String, ByteIterator>();
+				// Vector<HashMap<String,ByteIterator>> r;//=new
+				// Vector<HashMap<String,ByteIterator>>();
+				//
+				// for (int ii=nuMembers; ii>=0;ii--){
+				// //System.out.println("i="+ii);
+				// int x=CoreWorkload.myMemberObjs[ii].get_uid();
+				// // System.out.println("id="+x);
+				// result= new HashMap<String, ByteIterator>();
+				// wthread._db.viewProfile(0, x, result, false, false);
+				// r=new Vector<HashMap<String,ByteIterator>>();
+				// wthread._db.listFriends(0, x, null, r, false, false);
+				// r=new Vector<HashMap<String,ByteIterator>>();
+				// wthread._db.viewFriendReq(x, r, false, false);
+				// if (ii%100==0){
+				// System.out.println("Client "+ Client.machineid+" Done with "+ (nuMembers-ii)
+				// +" members");
+				// }
+				// }
 
-				for ( i=0;i<customThreads.size();i++){
+				for (i = 0; i < customThreads.size(); i++) {
 					try {
 						customThreads.get(i).join();
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace(System.out);
 					}
-					System.out.println("Warmup thread "+i +"joined");
+					System.out.println("Warmup thread " + i + "joined");
 
 				}
-
 
 			}
 		}
@@ -2609,18 +2681,21 @@ public class Client {
 			ClassLoader classLoader) throws UnknownDBException, DBException,
 			ClassNotFoundException, InstantiationException,
 			IllegalAccessException, WorkloadException {
+
+		System.out.println("Entering intializeDB method in Client.java with dbname="
+				+ dbname);
 		DB db = DBFactory.newDB(dbname, props);
 		db.init();
 		Class<?> workloadclass = classLoader.loadClass(props
 				.getProperty(WORKLOAD_PROPERTY));
-		if(workload == null)
+		if (workload == null)
 			workload = (Workload) workloadclass.newInstance();
 		else
 			workload.setStopRequested(false);
 		// before starting the benchmark get the database statistics :
 		// member count, resource per member and avg friend per member
 		workload.init(props, null);
-		workload.resetDBInternalStructures(props, BGMainClass.exeMode );
+		workload.resetDBInternalStructures(props, BGMainClass.exeMode);
 		props.setProperty(INIT_USER_COUNT_PROPERTY, workload
 				.getDBInitialStats(db).get(USERCOUNT));
 		props.setProperty(INIT_RES_COUNT_PROPERTY, workload
@@ -2629,7 +2704,7 @@ public class Client {
 				.getDBInitialStats(db).get(AVG_FRNDS_PER_USER));
 		props.setProperty(INIT_PEND_COUNT_PROPERTY, workload
 				.getDBInitialStats(db).get(AVG_PENDING_PER_USER));
-//		db.cleanup(true);
+		// db.cleanup(true);
 	}
 
 	/**
@@ -2639,109 +2714,110 @@ public class Client {
 	private boolean isTotalProbabilityOne(Properties props) {
 		double totalProb = 0;
 		System.out
-		.println(props
-				.getProperty(
-						CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
-						CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT));
+				.println(props
+						.getProperty(
+								CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT));
 		totalProb = Double
 				.parseDouble(props
 						.getProperty(
 								CoreWorkload.GETOWNPROFILE_PROPORTION_PROPERTY,
 								CoreWorkload.GETOWNPROFILE_PROPORTION_PROPERTY_DEFAULT))
-								+ Double.parseDouble(props
-										.getProperty(
-												CoreWorkload.GETFRIENDPROFILE_PROPORTION_PROPERTY,
-												CoreWorkload.GETFRIENDPROFILE_PROPORTION_PROPERTY_DEFAULT))
-												+ Double.parseDouble(props
-														.getProperty(
-																CoreWorkload.POSTCOMMENTONRESOURCE_PROPORTION_PROPERTY,
-																CoreWorkload.POSTCOMMENTONRESOURCE_PROPORTION_PROPERTY_DEFAULT))
-																+ Double.parseDouble(props
-																		.getProperty(
-																				CoreWorkload.DELCOMMENTONRESOURCE_PROPORTION_PROPERTY,
-																				CoreWorkload.DELCOMMENTONRESOURCE_PROPORTION_PROPERTY_DEFAULT))
-																				+ Double.parseDouble(props
-																						.getProperty(
-																								CoreWorkload.GENERATEFRIENDSHIP_PROPORTION_PROPERTY,
-																								CoreWorkload.GENERATEFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
-																								+ Double.parseDouble(props
-																										.getProperty(
-																												CoreWorkload.ACCEPTFRIENDSHIP_PROPORTION_PROPERTY,
-																												CoreWorkload.ACCEPTFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
-																												+ Double.parseDouble(props
-																														.getProperty(
-																																CoreWorkload.REJECTFRIENDSHIP_PROPORTION_PROPERTY,
-																																CoreWorkload.REJECTFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
-																																+ Double.parseDouble(props
-																																		.getProperty(
-																																				CoreWorkload.UNFRIEND_PROPORTION_PROPERTY,
-																																				CoreWorkload.UNFRIEND_PROPORTION_PROPERTY_DEFAULT))
-																																				+ Double.parseDouble(props
-																																						.getProperty(
-																																								CoreWorkload.GETRANDOMPROFILEACTION_PROPORTION_PROPERTY,
-																																								CoreWorkload.GETRANDOMPROFILEACTION_PROPORTION_PROPERTY_DEFAULT))
-																																								+ Double.parseDouble(props
-																																										.getProperty(
-																																												CoreWorkload.GETRANDOMLISTOFFRIENDSACTION_PROPORTION_PROPERTY,
-																																												CoreWorkload.GETRANDOMLISTOFFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																												+ Double.parseDouble(props
-																																														.getProperty(
-																																																CoreWorkload.GETRANDOMLISTOFPENDINGREQUESTSACTION_PROPORTION_PROPERTY,
-																																																CoreWorkload.GETRANDOMLISTOFPENDINGREQUESTSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																+ Double.parseDouble(props
-																																																		.getProperty(
-																																																				CoreWorkload.INVITEFRIENDSACTION_PROPORTION_PROPERTY,
-																																																				CoreWorkload.INVITEFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																				+ Double.parseDouble(props
-																																																						.getProperty(
-																																																								CoreWorkload.ACCEPTFRIENDSACTION_PROPORTION_PROPERTY,
-																																																								CoreWorkload.ACCEPTFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																								+ Double.parseDouble(props
-																																																										.getProperty(
-																																																												CoreWorkload.REJECTFRIENDSACTION_PROPORTION_PROPERTY,
-																																																												CoreWorkload.REJECTFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																												+ Double.parseDouble(props
-																																																														.getProperty(
-																																																																CoreWorkload.UNFRIENDFRIENDSACTION_PROPORTION_PROPERTY,
-																																																																CoreWorkload.UNFRIENDFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																+ Double.parseDouble(props
-																																																																		.getProperty(
-																																																																				CoreWorkload.GETTOPRESOURCEACTION_PROPORTION_PROPERTY,
-																																																																				CoreWorkload.GETTOPRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																				+ Double.parseDouble(props
-																																																																						.getProperty(
-																																																																								CoreWorkload.GETCOMMENTSONRESOURCEACTION_PROPORTION_PROPERTY,
-																																																																								CoreWorkload.GETCOMMENTSONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																								+ Double.parseDouble(props
-																																																																										.getProperty(
-																																																																												CoreWorkload.POSTCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
-																																																																												CoreWorkload.POSTCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																												+ Double.parseDouble(props
-																																																																														.getProperty(
-																																																																																CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
-																																																																																CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																																+ Double.parseDouble(props
-																																																																																		.getProperty(
-																																																																																				CoreWorkload.VIEWNEWSFEEDACTION_PROPORTION_PROPERTY,
-																																																																																				CoreWorkload.VIEWNEWSFEEDACTION_PROPORTION_PROPERTY_DEFAULT))
-																																																																																				+ Double.parseDouble(props
-																																																																																						.getProperty(
-																																																																																								CoreWorkload.GETSHORTESTPATHLENGTH_PROPORTION_PROPERTY,
-																																																																																								CoreWorkload.GETSHORTESTPATHLENGTH_PROPORTION_PROPERTY_DEFAULT))
-																																																																																								+ Double.parseDouble(props
-																																																																																										.getProperty(
-																																																																																												CoreWorkload.LISTCOMMONFRNDS_PROPORTION_PROPERTY,
-																																																																																												CoreWorkload.LISTCOMMONFRNDS_PROPORTION_PROPERTY_DEFAULT))
-																																																																																												+ Double.parseDouble(props
-																																																																																														.getProperty(
-																																																																																																CoreWorkload.LISTFRNDSOFFRNDS_PROPORTION_PROPERTY,
-																																																																																																CoreWorkload.LISTFRNDSOFFRNDS_PROPORTION_PROPERTY_DEFAULT));
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETFRIENDPROFILE_PROPORTION_PROPERTY,
+								CoreWorkload.GETFRIENDPROFILE_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.POSTCOMMENTONRESOURCE_PROPORTION_PROPERTY,
+								CoreWorkload.POSTCOMMENTONRESOURCE_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.DELCOMMENTONRESOURCE_PROPORTION_PROPERTY,
+								CoreWorkload.DELCOMMENTONRESOURCE_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GENERATEFRIENDSHIP_PROPORTION_PROPERTY,
+								CoreWorkload.GENERATEFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.ACCEPTFRIENDSHIP_PROPORTION_PROPERTY,
+								CoreWorkload.ACCEPTFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.REJECTFRIENDSHIP_PROPORTION_PROPERTY,
+								CoreWorkload.REJECTFRIENDSHIP_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.UNFRIEND_PROPORTION_PROPERTY,
+								CoreWorkload.UNFRIEND_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETRANDOMPROFILEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.GETRANDOMPROFILEACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETRANDOMLISTOFFRIENDSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.GETRANDOMLISTOFFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETRANDOMLISTOFPENDINGREQUESTSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.GETRANDOMLISTOFPENDINGREQUESTSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.INVITEFRIENDSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.INVITEFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.ACCEPTFRIENDSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.ACCEPTFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.REJECTFRIENDSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.REJECTFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.UNFRIENDFRIENDSACTION_PROPORTION_PROPERTY,
+								CoreWorkload.UNFRIENDFRIENDSACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETTOPRESOURCEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.GETTOPRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETCOMMENTSONRESOURCEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.GETCOMMENTSONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.POSTCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.POSTCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY,
+								CoreWorkload.DELCOMMENTONRESOURCEACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.VIEWNEWSFEEDACTION_PROPORTION_PROPERTY,
+								CoreWorkload.VIEWNEWSFEEDACTION_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.GETSHORTESTPATHLENGTH_PROPORTION_PROPERTY,
+								CoreWorkload.GETSHORTESTPATHLENGTH_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.LISTCOMMONFRNDS_PROPORTION_PROPERTY,
+								CoreWorkload.LISTCOMMONFRNDS_PROPORTION_PROPERTY_DEFAULT))
+				+ Double.parseDouble(props
+						.getProperty(
+								CoreWorkload.LISTFRNDSOFFRNDS_PROPORTION_PROPERTY,
+								CoreWorkload.LISTFRNDSOFFRNDS_PROPORTION_PROPERTY_DEFAULT));
 
 		if (((totalProb - 1) > 0.1) || ((1 - totalProb) > 0.1)) {
 			System.out
-			.println("The sum of the probabilities assigned to the actions and activities is not 1. Total Prob = "
-					+ totalProb);
-			//System.exit(0);
+					.println(
+							"The sum of the probabilities assigned to the actions and activities is not 1. Total Prob = "
+									+ totalProb);
+			// System.exit(0);
 			System.out.println(EXECUTIONDONEMSG);
 			return false;
 		}
@@ -2761,7 +2837,9 @@ public class Client {
 	private int threadCountForNoTransactions(Properties props, boolean[] inputArguments,
 			final int doSchema, final int doTestDB, final int doStats,
 			final int doReset, int threadCount) {
-		if (!inputArguments[doSchema] && !inputArguments[doTestDB] && !inputArguments[doStats] && !inputArguments[doReset]) { // when creating schema
+		System.out.println("Entering threadCountForNoTransactions in Client.java with threadCount=" + threadCount);
+		if (!inputArguments[doSchema] && !inputArguments[doTestDB] && !inputArguments[doStats]
+				&& !inputArguments[doReset]) { // when creating schema
 			// the number of threads
 			// does not matter
 			// so no thread will get 0 users
@@ -2805,6 +2883,7 @@ public class Client {
 						Integer.toString(threadCount));
 			}
 		}
+		System.out.println("Exiting threadCountForNoTransactions in Client.java with threadCount=" + threadCount);
 		return threadCount;
 	}
 
@@ -2814,28 +2893,33 @@ public class Client {
 	 * @return threadCount
 	 */
 	private int threadCountForTransactions(Properties props, int threadCount) {
+		System.out.println("Entering threadCountForTransactions in Client.java with threadCount=" + threadCount);
+
+		int userCount = Integer.parseInt(props.getProperty(USER_COUNT_PROPERTY, USER_COUNT_PROPERTY_DEFAULT));
+		int opCount = Integer.parseInt(props.getProperty(OPERATION_COUNT_PROPERTY, OPERATION_COUNT_PROPERTY_DEFAULT));
+		System.out.println("USER_COUNT_PROPERTY: " + userCount);
+		System.out.println("OPERATION_COUNT_PROPERTY: " + opCount);
+
 		// needed for the activate user array
-		if (Integer.parseInt(props.getProperty(USER_COUNT_PROPERTY,
-				USER_COUNT_PROPERTY_DEFAULT)) < threadCount) {
+		if (userCount < threadCount) {
+			System.out.println("userCount < threadCount, setting threadCount to 5");
 			props.setProperty(THREAD_CNT_PROPERTY, "5");
 			threadCount = 5;
 		}
+
 		// so no thread will get 0 ops
-		if (Integer.parseInt(props.getProperty(OPERATION_COUNT_PROPERTY,
-				OPERATION_COUNT_PROPERTY_DEFAULT)) != 0
-				&& Integer.parseInt(props.getProperty(
-						OPERATION_COUNT_PROPERTY,
-						OPERATION_COUNT_PROPERTY_DEFAULT))
-						% threadCount != 0) {
+		if (opCount != 0 && opCount % threadCount != 0) {
+			System.out.println("opCount % threadCount != 0, decrementing threadCount until divisible");
 			threadCount--;
-			while (Integer.parseInt(props.getProperty(
-					OPERATION_COUNT_PROPERTY,
-					OPERATION_COUNT_PROPERTY_DEFAULT))
-					% threadCount != 0)
+			while (opCount % threadCount != 0) {
+				System.out.println("Trying threadCount: " + threadCount);
 				threadCount--;
-			props.setProperty(THREAD_CNT_PROPERTY,
-					Integer.toString(threadCount));
+			}
+			System.out.println("Final threadCount after adjustment: " + threadCount);
+			props.setProperty(THREAD_CNT_PROPERTY, Integer.toString(threadCount));
 		}
+
+		System.out.println("threadCountForTransactions: " + threadCount + " threads will be used for the benchmark");
 		return threadCount;
 	}
 
@@ -2843,7 +2927,7 @@ public class Client {
 	 * 
 	 * @param listenerConnection
 	 * @param props
-	 * @return an object containing the PrintWriter and the Scanner references 
+	 * @return an object containing the PrintWriter and the Scanner references
 	 */
 	private Object[] establishSocketConnection(Socket listenerConnection, Properties props) {
 		PrintWriter printWriter;
@@ -2857,27 +2941,26 @@ public class Client {
 				int port = Integer.parseInt(props.getProperty(
 						PORT_PROPERTY, PORT_PROPERTY_DEFAULT));
 				System.out
-				.println("Trying to do rating with the specified thread count , creating socket on "
-						+ port);
-
+						.println("Trying to do rating with the specified thread count , creating socket on "
+								+ port);
 
 				BGSocket = new ServerSocket(port, 10);
 				System.out.println("Started");
 				System.out
-				.println("BGClient: started and Waiting for connection on "
-						+ port);
+						.println("BGClient: started and Waiting for connection on "
+								+ port);
 				listenerConnection = BGSocket.accept();
 				System.out.println("BGClient: Connection received from "
 						+ listenerConnection.getInetAddress().getHostName());
-				//BGSocket.close();
-			} 
+				// BGSocket.close();
+			}
 
 			inputStream = listenerConnection.getInputStream();
 			outputStream = listenerConnection.getOutputStream();
 			printWriter = new PrintWriter(outputStream);
 			scanner = new Scanner(inputStream);
 			// send connected message to the rater thread
-			System.out.println("Initiated"); 
+			System.out.println("Initiated");
 			printWriter.print("Initiated ");
 			printWriter.flush();
 			System.out.println("BGClient: SENT initiation message to "
@@ -2898,86 +2981,81 @@ public class Client {
 	 * @param fileprops
 	 */
 
-	public static ConcurrentHashMap<Integer, ClientInfo> PopulateClientInfo(String s,int numBGClients)
-	{
+	public static ConcurrentHashMap<Integer, ClientInfo> PopulateClientInfo(String s, int numBGClients) {
 
+		System.out.println("Entering PopulateClientInfo in Client.java with CLIENTS_INFO_PROPERTY =" + s
+				+ " and numBGClients=" + numBGClients);
+		ConcurrentHashMap<Integer, ClientInfo> ClientInfoMap = new ConcurrentHashMap<Integer, ClientInfo>();
 
-		ConcurrentHashMap<Integer, ClientInfo> ClientInfoMap= new ConcurrentHashMap<Integer, ClientInfo>();
-
-		//clients=IP1:Port1,IP2:Port2,IP3:Port3
+		// clients=IP1:Port1,IP2:Port2,IP3:Port3
 		try {
-			int count=0;
-			for (int n=0;n<s.length();n++)
-			{
-				if (s.charAt(n)==':')
+			int count = 0;
+			for (int n = 0; n < s.length(); n++) {
+				if (s.charAt(n) == ':')
 					count++;
 			}
-			if (count!=numBGClients)
-			{
+			if (count != numBGClients) {
 				System.out.println("Error Number of Clients not match client pairs");
 				System.exit(1);
 			}
-			int j=s.indexOf('=');
-			String s2= s.substring(j+1);
+			int j = s.indexOf('=');
+			String s2 = s.substring(j + 1);
 
 			String IP;
-			int i2,i3, port;
-			int i=0;
-			for (i=0; i< numBGClients-1;i++)
-			{
-				i2=s2.indexOf(':');
-				i3= s2.indexOf(',');
+			int i2, i3, port;
+			int i = 0;
+			for (i = 0; i < numBGClients - 1; i++) {
+				i2 = s2.indexOf(':');
+				i3 = s2.indexOf(',');
 
-				IP= s2.substring(0, i2);
-				//System.out.println("IP= " + IP);
-				port= Integer.parseInt(s2.substring(i2+1, i3));
-				//System.out.println("port= " + port);
-				s2=s2.substring(i3+1, s2.length());
+				IP = s2.substring(0, i2);
+				// System.out.println("IP= " + IP);
+				port = Integer.parseInt(s2.substring(i2 + 1, i3));
+				// System.out.println("port= " + port);
+				s2 = s2.substring(i3 + 1, s2.length());
 
-				ClientInfo a = new ClientInfo(IP,port,i);
+				ClientInfo a = new ClientInfo(IP, port, i);
 				ClientInfoMap.put(i, a);
 
 			}
-			i2=s2.indexOf(':');
-			IP= s2.substring(0,i2);
-			port= Integer.parseInt(s2.substring(i2+1,s2.length()));
-			ClientInfo a = new ClientInfo(IP,port,i);
+			i2 = s2.indexOf(':');
+			IP = s2.substring(0, i2);
+			port = Integer.parseInt(s2.substring(i2 + 1, s2.length()));
+			ClientInfo a = new ClientInfo(IP, port, i);
 
 			ClientInfoMap.put(i, a);
 
-
 			// check Errors
-			for ( i=0; i< ClientInfoMap.size();i++)
-				for (j=i+1; j<ClientInfoMap.size();j++)
-				{
-					if (ClientInfoMap.get(i).getIP().equals(ClientInfoMap.get(j).getIP())&& ClientInfoMap.get(i).getPort()== ClientInfoMap.get(j).getPort())
-					{
+			for (i = 0; i < ClientInfoMap.size(); i++)
+				for (j = i + 1; j < ClientInfoMap.size(); j++) {
+					if (ClientInfoMap.get(i).getIP().equals(ClientInfoMap.get(j).getIP())
+							&& ClientInfoMap.get(i).getPort() == ClientInfoMap.get(j).getPort()) {
 						System.out.println("IP:Port Duplicates");
 						System.exit(1);
 					}
 				}
 
+			// The number of comma seperated IP:Port in the cleints must equal numclients.
+			// Otherwise, report error and exit!
 
-			//The number of comma seperated IP:Port in the cleints must equal numclients.  Otherwise, report error and exit!
-
-			if (ClientInfoMap.size()!= numBGClients )
-			{
+			if (ClientInfoMap.size() != numBGClients) {
 				System.out.println("Error: Number of Clients not Equal Number of (IP,Port) pairs");
 				System.exit(1);
 			}
 
-
-		}
-		catch(Exception ex)
-		{
+		} catch (Exception ex) {
 
 			System.out.println("Error: Client IP, Port are not Passed correctly");
 			System.exit(1);
 		}
+		System.out.println("ClientInfoMap populated with " + ClientInfoMap.size() + " clients.");
+		System.out.println("Exiting PopulateClientInfo method in Client.java");
 		return ClientInfoMap;
 
 	}
+
 	public static void readCmdArgs(String[] args, Properties props, boolean[] inputArguments, Properties fileprops) {
+		System.out.println("Entering readCmdArgs method of Client.java");
 		int argIndex = 0;
 		final int dotransactions = 0;
 		final int doSchema = 1;
@@ -2990,170 +3068,170 @@ public class Client {
 		final int status = 8;
 		System.out.println(args);
 		while (args[argIndex].startsWith("-")) {
+			System.out.println("Processing argument: " + args[argIndex] + " at index " + argIndex);
 			if (args[argIndex].equals("-threads")) {
 				argIndex++;
 				if (argIndex >= args.length) {
+					System.out.println("No value provided for -threads");
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 				int tcount = Integer.parseInt(args[argIndex]);
+				System.out.println("Setting THREAD_CNT_PROPERTY to " + tcount);
 				props.setProperty(THREAD_CNT_PROPERTY, tcount + "");
-			}
-			else if (args[argIndex].equals("-target")) {
+			} else if (args[argIndex].equals("-target")) {
 				argIndex++;
 				if (argIndex >= args.length) {
+					System.out.println("No value provided for -target");
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 				int ttarget = Integer.parseInt(args[argIndex]);
+				System.out.println("Setting target to " + ttarget);
 				props.setProperty("target", ttarget + "");
 			} else if (args[argIndex].compareTo("-load") == 0) {
+				System.out.println("Detected -load, setting dotransactions to false");
 				inputArguments[dotransactions] = false;
 				argIndex++;
 			} else if (args[argIndex].compareTo("-threadcount") == 0) {
-				// parameter for validation thread
 				argIndex++;
-				props.setProperty("threadcount",args[argIndex]);
+				System.out.println("Setting threadcount property to " + args[argIndex]);
+				props.setProperty("threadcount", args[argIndex]);
 			} else if (args[argIndex].compareTo("-latency") == 0) {
-				// parameter for validation thread
 				argIndex++;
-				props.setProperty(EXPECTED_LATENCY_PROPERTY,args[argIndex]);
+				System.out.println("Setting EXPECTED_LATENCY_PROPERTY to " + args[argIndex]);
+				props.setProperty(EXPECTED_LATENCY_PROPERTY, args[argIndex]);
 			} else if (args[argIndex].compareTo("-maxexecutiontime") == 0) {
-				// parameter for executiontime
 				argIndex++;
-				props.setProperty(MAX_EXECUTION_TIME,args[argIndex]);
+				System.out.println("Setting MAX_EXECUTION_TIME to " + args[argIndex]);
+				props.setProperty(MAX_EXECUTION_TIME, args[argIndex]);
 			} else if (args[argIndex].compareTo("-doCache") == 0) {
-				// parameter for docache for janusgraph, true or false
 				argIndex++;
-				props.setProperty("doCache",args[argIndex]);
+				System.out.println("Setting doCache to " + args[argIndex]);
+				props.setProperty("doCache", args[argIndex]);
 			} else if (args[argIndex].compareTo("-janusGraphIp") == 0) {
-				// parameter for docache for janusgraph, true or false
 				argIndex++;
-				props.setProperty("janusGraphIp",args[argIndex]);
-			}
-			else if (args[argIndex].compareTo("-loadindex") == 0) {
+				System.out.println("Setting janusGraphIp to " + args[argIndex]);
+				props.setProperty("janusGraphIp", args[argIndex]);
+			} else if (args[argIndex].compareTo("-loadindex") == 0) {
+				System.out.println("Detected -loadindex, setting dotransactions to false and doIndex to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doIndex] = true;
 			} else if (args[argIndex].compareTo("-loadfriends") == 0) {
+				System.out.println(
+						"Detected -loadfriends, setting dotransactions to false, doIndex and doLoadFriends to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doIndex] = true;
 				inputArguments[doLoadFriends] = true;
 			} else if (args[argIndex].compareTo("-t") == 0) {
 				argIndex++;
+				System.out.println("Detected -t, setting dotransactions to true");
 				inputArguments[dotransactions] = true;
 			} else if (args[argIndex].compareTo("-schema") == 0) {
+				System.out.println("Detected -schema, setting dotransactions to false and doSchema to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doSchema] = true;
 			} else if (args[argIndex].compareTo("-dropupdates") == 0) {
+				System.out.println(
+						"Detected -dropupdates, setting dotransactions to false, doSchema and doDropUpdates to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doSchema] = true;
 				inputArguments[doDropUpdates] = true;
 			} else if (args[argIndex].compareTo("-testdb") == 0) {
+				System.out.println("Detected -testdb, setting dotransactions to false and doTestDB to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doTestDB] = true;
 			} else if (args[argIndex].compareTo("-stats") == 0) {
+				System.out.println("Detected -stats, setting dotransactions to false and doStats to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doStats] = true;
-			}else if(args[argIndex].compareTo("-reset") == 0){
+			} else if (args[argIndex].compareTo("-reset") == 0) {
+				System.out.println("Detected -reset, setting dotransactions to false and doReset to true");
 				inputArguments[dotransactions] = false;
 				inputArguments[doReset] = true;
 			} else if (args[argIndex].compareTo("-s") == 0) {
+				System.out.println("Detected -s, setting status to true");
 				inputArguments[status] = true;
 			} else if (args[argIndex].compareTo("-db") == 0) {
 				argIndex++;
 				if (argIndex >= args.length) {
+					System.out.println("No value provided for -db");
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
+				System.out.println("Setting db to " + args[argIndex]);
 				props.setProperty("db", args[argIndex]);
-			}
-			else if (args[argIndex].equals("-P")) {
+			} else if (args[argIndex].equals("-P")) {
 				argIndex++;
-				String filename=args[argIndex].toLowerCase();
-				System.out.println(filename);
-				if (filename.contains("action") || filename.contains("symmetric"))
-				{
-					char delimeter='\\';
+				String filename = args[argIndex].toLowerCase();
+				System.out.println("Processing -P with filename: " + filename);
+				if (filename.contains("action") || filename.contains("symmetric")) {
+					char delimeter = '\\';
 					if (filename.contains("/"))
-						delimeter='/';
-					String workload=filename.substring(filename.lastIndexOf(delimeter)+1);
-					//					String tokens[]=filename.split(delimeter);
-					System.out.println(workload);
+						delimeter = '/';
+					String workload = filename.substring(filename.lastIndexOf(delimeter) + 1);
+					System.out.println("Extracted workload file: " + workload);
 					props.put("workloadfile", workload);
 				}
 				if (argIndex >= args.length) {
+					System.out.println("No property file provided after -P");
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 				String propfile = args[argIndex];
+				System.out.println("Loading properties from file: " + propfile);
 
 				Properties myfileprops = new Properties();
 				try {
 					myfileprops.load(new FileInputStream(propfile));
+					System.out.println("Loaded properties from " + propfile);
 				} catch (IOException e) {
-					System.out.println(e.getMessage());
-					// System.exit(0);
+					System.out.println("Error loading property file: " + e.getMessage());
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 
 				for (Enumeration e = myfileprops.propertyNames(); e.hasMoreElements();) {
 					String prop = (String) e.nextElement();
+					System.out.println("Setting property from file: " + prop + " = " + myfileprops.getProperty(prop));
 					fileprops.setProperty(prop, myfileprops.getProperty(prop));
 				}
-			}
-			//			else if (args[argIndex].compareTo("-c") == 0)
-			//			{
-			//				argIndex++;
-			//				if (argIndex >= args.length) {
-			//					usageMessage();
-			//					// System.exit(0);
-			//					System.out.println(EXECUTIONDONEMSG);
-			//					return;
-			//				}
-			//				PopulateClientInfo(args[argIndex]);
-			//				
-			//				
-			//				
-			//			}
-			else if (args[argIndex].compareTo("-p") == 0) {
+			} else if (args[argIndex].compareTo("-p") == 0) {
 				argIndex++;
 				if (argIndex >= args.length) {
+					System.out.println("No name=value provided after -p");
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 				int eq = args[argIndex].indexOf('=');
 				if (eq < 0) {
+					System.out.println("No '=' found in -p argument: " + args[argIndex]);
 					usageMessage();
-					// System.exit(0);
 					System.out.println(EXECUTIONDONEMSG);
 					return;
 				}
 				String name = args[argIndex].substring(0, eq);
 				String value = args[argIndex].substring(eq + 1);
+				System.out.println("Setting property from -p: " + name + " = " + value);
 				props.put(name, value);
 			} else {
 				System.out.println("Unknown option " + args[argIndex]);
 				usageMessage();
-				// System.exit(0);
 				System.out.println(EXECUTIONDONEMSG);
 				return;
 			}
 			argIndex++;
 			if (argIndex >= args.length) {
+				System.out.println("Reached end of arguments.");
 				break;
 			}
-			System.out.println(props);
-		}// done reading command args
+			System.out.println("Current properties: " + props);
+		}
+		System.out.println("Exiting readCmdArguments method in Client.java");// done reading command args
 	}
 }

@@ -17,9 +17,7 @@
  * LICENSE file.                                                                                                                                                                   
  */
 
-
 package edu.usc.bg.workloads;
-
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,8 +35,10 @@ import edu.usc.bg.base.RandomByteIterator;
 import edu.usc.bg.base.Workload;
 import edu.usc.bg.base.WorkloadException;
 import edu.usc.bg.base.generator.CounterGenerator;
+
 /**
  * Used for loading members into the data store
+ * 
  * @author barahman
  *
  */
@@ -51,8 +51,8 @@ public class UserWorkload extends Workload {
 	// The length of each field for a record in Byte.
 	public final static int fieldLength = 100;
 	// The name of each field for the "user" table.
-	public final static String[] fieldName = {"USERID", "USERNAME", "PW", "FNAME", "LNAME", "GENDER",
-		"DOB", "JDATE", "LDATE", "ADDRESS", "EMAIL", "TEL"};
+	public final static String[] fieldName = { "USERID", "USERNAME", "PW", "FNAME", "LNAME", "GENDER",
+			"DOB", "JDATE", "LDATE", "ADDRESS", "EMAIL", "TEL" };
 	// The base number for generating the random date.
 	public final static long MAX_INTERVAL = 50000000000L;
 	// The start of the date for generating the random date.
@@ -60,10 +60,10 @@ public class UserWorkload extends Workload {
 
 	// These following fields could be kept in the property file.
 	public static boolean insertImage = false;
-	public static int imageSize = 1;  //in KB
+	public static int imageSize = 1; // in KB
 	private static int IMAGE_SIZE_GRAN = 1024;
-	private int THUMB_IMAGE_SIZE = 2;  //in KB
-	
+	private int THUMB_IMAGE_SIZE = 2; // in KB
+
 	// The number of records to be inserted.
 	int recordCount = 100; // User number.
 	CounterGenerator keySequence;
@@ -75,20 +75,29 @@ public class UserWorkload extends Workload {
 	}
 
 	// Initialize all of the threads with the same configuration.
-	public void init(Properties p,  Vector<Integer> members) throws WorkloadException {
-		recordCount=Integer.parseInt(p.getProperty(Client.USER_COUNT_PROPERTY, Client.USER_COUNT_PROPERTY_DEFAULT));
+	public void init(Properties p, Vector<Integer> members) throws WorkloadException {
+		System.out.println("Enter UserWorkload: init() called");
+		recordCount = Integer.parseInt(p.getProperty(Client.USER_COUNT_PROPERTY, Client.USER_COUNT_PROPERTY_DEFAULT));
 		keySequence = new CounterGenerator(0); // For generating user ID.
-		insertImage = Boolean.parseBoolean(p.getProperty(Client.INSERT_IMAGE_PROPERTY, Client.INSERT_IMAGE_PROPERTY_DEFAULT));
+		insertImage = Boolean
+				.parseBoolean(p.getProperty(Client.INSERT_IMAGE_PROPERTY, Client.INSERT_IMAGE_PROPERTY_DEFAULT));
 		_members = members;
-		if(p.getProperty(Client.IMAGE_SIZE_PROPERTY) != null)
+
+		System.out.println(
+				"UserWorkload init: recordCount=" + recordCount +
+						", keySequence=" + keySequence +
+						", insertImage=" + insertImage +
+						", _members.size=" + (_members != null ? _members.size() : "null"));
+		if (p.getProperty(Client.IMAGE_SIZE_PROPERTY) != null)
 			imageSize = Integer.parseInt(p.getProperty(Client.IMAGE_SIZE_PROPERTY));
+
+		System.out.println("Exiting UserWorkload: init() called");
 		return;
 	}
 
-
 	// Return a date using the specific format.
-	public String getDate(){
-		Date date = new Date(random.nextLong()%MAX_INTERVAL + BASE_INTERVAL);
+	public String getDate() {
+		Date date = new Date(random.nextLong() % MAX_INTERVAL + BASE_INTERVAL);
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		String dateString = sdf.format(date);
 		return dateString;
@@ -98,31 +107,32 @@ public class UserWorkload extends Workload {
 	// userid, username, pw, fname, lname, gender,
 	// dob, jdate, ldate, address, email, tel.
 	private HashMap<String, ByteIterator> buildValues() {
-		//to preserve order
+		// to preserve order
 		HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
 		for (int i = 1; i <= fieldCount; i++) {
 			// Generate the fields using StringByteIterator and RandomByteIterator.
 			String fieldKey = fieldName[i];
 			ByteIterator data;
-			if(6 == i || 7 == i || 8 == i ){ // Date of birth, last login date, join date
-				data = new ObjectByteIterator(getDate().getBytes()); 
-			}else{
+			if (6 == i || 7 == i || 8 == i) { // Date of birth, last login date, join date
+				data = new ObjectByteIterator(getDate().getBytes());
+			} else {
 				byte[] bytes = new RandomByteIterator(fieldLength).toArray();
 				data = new ObjectByteIterator(bytes);
 			}
 			values.put(fieldKey, data);
-		} 	
-		//if images should be inserted for users, create and send them with other fields
-		if(insertImage){
-			byte[] profileImage = new byte[imageSize*IMAGE_SIZE_GRAN];
+		}
+		// if images should be inserted for users, create and send them with other
+		// fields
+		if (insertImage) {
+			byte[] profileImage = new byte[imageSize * IMAGE_SIZE_GRAN];
 			new Random().nextBytes(profileImage);
 			values.put("pic", new ObjectByteIterator(profileImage));
-			
-			byte[] thumbImage = new byte[THUMB_IMAGE_SIZE*IMAGE_SIZE_GRAN];
+
+			byte[] thumbImage = new byte[THUMB_IMAGE_SIZE * IMAGE_SIZE_GRAN];
 			new Random().nextBytes(thumbImage);
-			values.put("tpic", new ObjectByteIterator(thumbImage) );
-			
+			values.put("tpic", new ObjectByteIterator(thumbImage));
+
 		}
 		return values;
 	}
@@ -138,14 +148,12 @@ public class UserWorkload extends Workload {
 		int keyIdx = keySequence.nextInt();
 		String dbKey = buildKeyName(_members.get(keyIdx));
 		HashMap<String, ByteIterator> values = buildValues();
-		if (db.insertEntity(table, dbKey, values, insertImage) >= 0){
+		if (db.insertEntity(table, dbKey, values, insertImage) >= 0) {
 			return true;
-		}else{
+		} else {
 			return false;
 		}
 	}
-
-
 
 	@Override
 	public HashMap<String, String> getDBInitialStats(DB db) {

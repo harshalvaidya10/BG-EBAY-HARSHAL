@@ -366,6 +366,7 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public boolean init() throws DBException {
+		System.out.println("Entering init method in JanusGraphClient.java");
 		props = getProperties();
 		cache = Boolean.parseBoolean(props.getProperty("doCache", "true"));
 		logger.setLevel(Level.WARNING);
@@ -396,6 +397,7 @@ public class JanusGraphClient extends DB {
 		this.client = sharedClient;
 		this.g = sharedG;
 		this.g_read = sharedGRead;
+		System.out.println("Exiting init method in JanusGraphClient.java");
 		return true;
 	}
 
@@ -522,6 +524,7 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public void createSchema(Properties props) {
+		System.out.println("Entering createSchema method in JanusGraphClient.java");
 		try {
 			String schemaScript = new String(Files.readAllBytes(Paths.get("conf/schema.groovy")));
 			sharedClient.submit(schemaScript).all().get();
@@ -529,6 +532,7 @@ public class JanusGraphClient extends DB {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println("Exiting createSchema method in JanusGraphClient.java");
 	}
 
 	@Override
