@@ -572,7 +572,6 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public int inviteFriend(int inviterID, int inviteeID) {
-		System.out.println(">>>> JanusGraphClient: inviteFriend() called with " + inviterID + ", " + inviteeID);
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("inviteFriend-%d-%d-%d", inviterID, inviteeID, timestamp);
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
@@ -624,12 +623,9 @@ public class JanusGraphClient extends DB {
 
 	@Override
 	public int CreateFriendship(int friendid1, int friendid2) {
-		System.out.println(">>>> JanusGraphClient: CreateFriendship() called with " + friendid1 + ", " + friendid2);
-		System.out.println("Attempting to create friendship from " + friendid1 + " to " + friendid2);
 		long timestamp = Instant.now().toEpochMilli();
 		String operationId = String.format("CreateFriendship-%d-%d-%d", friendid1, friendid2, timestamp);
 
-		System.out.println(">>> DEBUG: Called CreateFriendship for " + friendid1 + " <-> " + friendid2);
 
 		DefaultLoggableOperation operation = new DefaultLoggableOperation(operationId, () -> {
 			g.V().hasLabel("users").has("userid", friendid1).as("inviter")
@@ -643,7 +639,6 @@ public class JanusGraphClient extends DB {
 
 		operation.addLog("[" + timestamp + "] Friendship established from " + friendid1 + " -> " + friendid2
 				+ " [Thread id: " + Thread.currentThread().getId() + "]");
-		System.out.println("CreateFriendship submitted for: " + friendid1 + " -> " + friendid2);
 		return runWithRetry(operation);
 	}
 
