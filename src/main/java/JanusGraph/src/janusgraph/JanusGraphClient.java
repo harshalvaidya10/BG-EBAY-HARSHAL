@@ -147,8 +147,6 @@ public class JanusGraphClient extends DB {
 	}
 
 	private int runWithRetry(DefaultLoggableOperation operation) {
-		System.out.println("Running operation with ID: " + operation.getOperationId());
-
 		String opId = operation.getOperationId();
 		for (int attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
